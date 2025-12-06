@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kick Slot Caller Wheel</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Pusher JS (for Kick Chat) -->
+    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+</head>
+
+<body>
+
+    <div id="app">
+        <!-- Sidebar Controls -->
+        <aside id="sidebar">
+            <h1>Kick Slot<br>Caller</h1>
+
+            <div class="control-group">
+                <label for="kick-username">Kick Username</label>
+                <input type="text" id="kick-username" placeholder="e.g. trainwreckstv">
+                <button id="connect-btn" class="btn btn-primary" style="margin-top: 10px;">Connect Chat</button>
+            </div>
+
+            <div class="control-group" id="manual-connection" style="display: none;">
+                <label for="channel-id">Manual Channel ID (If auto-detect fails)</label>
+                <input type="number" id="channel-id" placeholder="e.g. 123456">
+                <button id="manual-connect-btn" class="btn btn-secondary">Connect Function</button>
+            </div>
+
+            <div class="queue-header">
+                <span>Queue (<span id="queue-count">0</span>)</span>
+                <button id="clear-queue-btn" class="btn"
+                    style="width: auto; padding: 2px 8px; font-size: 0.7rem; background: rgba(255,255,255,0.1);">Clear</button>
+            </div>
+
+            <div id="queue-container">
+                <!-- Queue Items will appear here -->
+            </div>
+
+
+        </aside>
+
+        <!-- Main Stage -->
+        <main id="stage">
+            <div id="wheel-container">
+                <canvas id="wheel-canvas" width="800" height="800"></canvas>
+                <button id="spin-btn">SPIN</button>
+            </div>
+
+            <!-- Recent Winners Bar -->
+            <div id="recent-bar">
+                <span class="recent-label">History:</span>
+                <div id="recent-list"></div>
+            </div>
+        </main>
+
+        <!-- Winner Modal -->
+        <div id="winner-modal">
+            <div class="winner-card">
+                <div class="winner-text">Winner!</div>
+                <div class="winner-name" id="winner-name">Username</div>
+                <div class="winner-slot" id="winner-slot">Slot Name</div>
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-primary"
+                        onclick="document.getElementById('winner-modal').classList.remove('active')">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="wheel.js"></script>
+    <script src="kick.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
