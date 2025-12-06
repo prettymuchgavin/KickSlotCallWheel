@@ -380,8 +380,32 @@ canvas#wheel-canvas {
   border: 1px solid transparent;
 }
 
-.recent-item span {
+color: var(--kick-green);
+font-weight: 700;
+margin-right: 4px;
+}
+
+/* Instruction Banner */
+.instruction-banner {
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--kick-green);
+  color: #fff;
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  z-index: 10;
+  box-shadow: 0 0 20px rgba(83, 252, 24, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: slideIn 0.5s ease-out;
+}
+
+.instruction-banner span {
   color: var(--kick-green);
-  font-weight: 700;
-  margin-right: 4px;
+  font-weight: 800;
 }
