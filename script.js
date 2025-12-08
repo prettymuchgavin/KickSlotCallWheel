@@ -107,22 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         connectBtn.innerText = 'Connecting...';
 
         try {
-            await kickHandler.connect(username, (msg) => {
-                // Determine if !slotcall
-                if (msg.content.toLowerCase().startsWith('!slotcall')) {
-                    const parts = msg.content.split(' ');
-                    if (parts.length < 2) return; // No slot name provided
-
-                    const slotName = parts.slice(1).join(' ');
-
-                    addToQueue({
-                        username: msg.sender.username,
-                        // profile_pic removed
-                        slot_name: slotName,
-                        color: getRandomColor()
-                    });
-                }
-            });
+            await kickHandler.connect(username, handleKickMessage);
             connectBtn.innerText = 'Connected';
             connectBtn.classList.add('btn-primary'); // Keep green
         } catch (err) {
@@ -138,23 +123,57 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('manual-connect-btn').addEventListener('click', () => {
         const id = document.getElementById('channel-id').value;
         if (!id) return;
-        kickHandler.connectById(id, (msg) => {
-            if (!msg || !msg.content || typeof msg.content !== 'string') return;
+        kickHandler.connectById(id, handleKickMessage);
+    });
 
-            const content = msg.content.trim();
-            if (content.toLowerCase().startsWith('!slotcall')) {
+    // --- Mode Toggle Logic ---
+    let isGiveawayMode = false;
+    const modeToggle = document.getElementById('mode-toggle');
+    const modeLabel = document.getElementById('mode-label');
+    const instructionBanner = document.querySelector('.instruction-banner');
+
+    modeToggle.addEventListener('change', () => {
+        isGiveawayMode = modeToggle.checked;
+        if (isGiveawayMode) {
+            modeLabel.innerText = "Giveaway Mode";
+            instructionBanner.innerHTML = 'use <span>!giveaway</span> to enter giveaway!';
+        } else {
+            modeLabel.innerText = "Slot Call Mode";
+            instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
+        }
+    });
+
+    // Unified Message Handler
+    function handleKickMessage(msg) {
+        if (!msg || !msg.content || typeof msg.content !== 'string') return;
+
+        const content = msg.content.trim();
+        const lowerContent = content.toLowerCase();
+
+        if (isGiveawayMode) {
+            // Giveaway Mode: !giveaway -> Adds username
+            if (lowerContent.startsWith('!giveaway')) {
+                addToQueue({
+                    username: msg.sender.username,
+                    slot_name: msg.sender.username, // In giveaway, slot name IS the username
+                    color: getRandomColor()
+                });
+            }
+        } else {
+            // Slot Call Mode: !slotcall [name]
+            if (lowerContent.startsWith('!slotcall')) {
                 const parts = content.split(' ');
                 if (parts.length < 2) return;
                 const slotName = parts.slice(1).join(' ');
+
                 addToQueue({
                     username: msg.sender.username,
-                    // profile_pic removed
                     slot_name: slotName,
                     color: getRandomColor()
                 });
             }
-        });
-    });
+        }
+    }
 
 
 
