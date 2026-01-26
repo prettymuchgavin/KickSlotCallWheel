@@ -54,20 +54,34 @@ document.addEventListener('DOMContentLoaded', () => {
         wheel.updateSegments(queue);
     }
 
+    function removeFromQueue(index) {
+        queue.splice(index, 1);
+        updateQueueUI();
+        wheel.updateSegments(queue);
+    }
+
     function updateQueueUI() {
         queueContainer.innerHTML = '';
         queueCount.innerText = queue.length;
 
-        queue.forEach(user => {
+        queue.forEach((user, index) => {
             const item = document.createElement('div');
             item.className = 'queue-item';
-            // Removed Image tag here
             item.innerHTML = `
                 <div class="q-info">
                     <span class="q-name">${user.username}</span>
                     <span class="q-slot">${user.slot_name}</span>
                 </div>
+                <button class="q-delete-btn" title="Remove from queue">✕</button>
             `;
+            
+            // Add click handler for delete button
+            const deleteBtn = item.querySelector('.q-delete-btn');
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFromQueue(index);
+            });
+            
             queueContainer.appendChild(item);
         });
     }
