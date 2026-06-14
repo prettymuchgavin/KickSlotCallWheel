@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const history = []; // Array of { username, slot_name }
     let isConnected = false;
     let isGiveawayMode = false;
+    let connectedUsername = '';
 
     // --- Mode Toggle DOM Elements ---
     const modeToggle = document.getElementById('mode-toggle');
@@ -91,13 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedMode = localStorage.getItem('kick_wheel_mode');
     if (savedMode === 'giveaway') {
         isGiveawayMode = true;
-        modeToggle.checked = true;
-        modeLabel.innerText = "Giveaway Mode";
+        if (modeToggle) modeToggle.checked = true;
+        if (modeLabel) modeLabel.innerText = "Giveaway Mode";
         instructionBanner.innerHTML = 'use <span>!giveaway</span> to enter giveaway!';
     } else {
         isGiveawayMode = false;
-        modeToggle.checked = false;
-        modeLabel.innerText = "Slot Call Mode";
+        if (modeToggle) modeToggle.checked = false;
+        if (modeLabel) modeLabel.innerText = "Slot Call Mode";
         instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
     }
 
@@ -106,19 +107,35 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHistoryUI();
     wheel.updateSegments(queue);
 
-    // 5. Auto-connect if active previously (Host window only)
-    if (!isOBS) {
+    // 5. OBS URL Parameters Check (Highest priority for OBS connection)
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryUsername = urlParams.get('username') || urlParams.get('user');
+    const queryChannelId = urlParams.get('channel_id') || urlParams.get('channelId') || urlParams.get('id');
+
+    if (isOBS && (queryUsername || queryChannelId)) {
+        console.log('OBS auto-connecting via URL query parameters...');
+        if (queryChannelId) {
+            connectWithId(queryChannelId);
+        } else if (queryUsername) {
+            connectToKick(queryUsername);
+        }
+    } else {
+        // Fallback to LocalStorage auto-connect settings
         const autoConnect = localStorage.getItem('kick_wheel_auto_connect') === 'true';
         const connectionType = localStorage.getItem('kick_wheel_connection_type');
         const savedUsername = localStorage.getItem('kick_wheel_username');
         const savedId = localStorage.getItem('kick_wheel_channel_id');
 
-        if (savedUsername) kickUsernameInput.value = savedUsername;
-        if (savedId) document.getElementById('channel-id').value = savedId;
+        if (savedUsername && kickUsernameInput) kickUsernameInput.value = savedUsername;
+        if (savedId && document.getElementById('channel-id')) {
+            document.getElementById('channel-id').value = savedId;
+        }
 
         if (autoConnect) {
             if (connectionType === 'manual' && savedId) {
-                document.getElementById('manual-connection').style.display = 'block';
+                if (document.getElementById('manual-connection')) {
+                    document.getElementById('manual-connection').style.display = 'block';
+                }
                 connectWithId(savedId);
             } else if (savedUsername) {
                 connectToKick(savedUsername);
@@ -157,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateQueueUI() {
         if (isOBS) return; // No sidebar UI in OBS overlay
+        if (!queueContainer) return;
         
         queueContainer.innerHTML = '';
         queueCount.innerText = queue.length;
@@ -208,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Stacked slots for overlay only displays 4 most recent called slots
         const maxDisplay = isOBS ? 4 : 5;
         const list = document.getElementById('recent-list');
+        if (!list) return;
         list.innerHTML = '';
         
         // Take up to maxDisplay elements
@@ -223,30 +242,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Connection Helpers ---
 
     async function connectToKick(username) {
-        if (isOBS) return;
-        connectBtn.disabled = true;
-        connectBtn.innerText = 'Connecting...';
+        if (connectBtn) {
+            connectBtn.disabled = true;
+            connectBtn.innerText = 'Connecting...';
+        }
 
         try {
             await kickHandler.connect(username, handleKickMessage);
+            connectedUsername = username;
             setConnected(true);
             localStorage.setItem('kick_wheel_username', username);
             localStorage.setItem('kick_wheel_connection_type', 'auto');
             localStorage.setItem('kick_wheel_auto_connect', 'true');
         } catch (err) {
-            console.error(err);
-            alert('Failed to connect automatically. Try Manual ID.');
-            document.getElementById('manual-connection').style.display = 'block';
+            console.error('Failed to connect automatically:', err);
+            if (!isOBS) {
+                alert('Failed to connect automatically. Try Manual ID.');
+                if (document.getElementById('manual-connection')) {
+                    document.getElementById('manual-connection').style.display = 'block';
+                }
+            }
             setConnected(false);
             localStorage.removeItem('kick_wheel_auto_connect');
         }
     }
 
     function connectWithId(id) {
-        if (isOBS) return;
         const manualConnectBtn = document.getElementById('manual-connect-btn');
-        manualConnectBtn.disabled = true;
-        manualConnectBtn.innerText = 'Connecting...';
+        if (manualConnectBtn) {
+            manualConnectBtn.disabled = true;
+            manualConnectBtn.innerText = 'Connecting...';
+        }
 
         try {
             kickHandler.connectById(id, handleKickMessage);
@@ -255,16 +281,18 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('kick_wheel_connection_type', 'manual');
             localStorage.setItem('kick_wheel_auto_connect', 'true');
         } catch (err) {
-            console.error(err);
-            alert('Failed to connect via Manual ID.');
+            console.error('Failed to connect via Manual ID:', err);
+            if (!isOBS) {
+                alert('Failed to connect via Manual ID.');
+            }
             setConnected(false);
             localStorage.removeItem('kick_wheel_auto_connect');
         }
     }
 
     function disconnectFromKick() {
-        if (isOBS) return;
         kickHandler.disconnect();
+        connectedUsername = '';
         setConnected(false);
         localStorage.removeItem('kick_wheel_auto_connect');
     }
@@ -275,40 +303,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (connected) {
             // Style Main Connect Button as Disconnect
-            connectBtn.disabled = false;
-            connectBtn.innerText = 'Disconnect';
-            connectBtn.classList.remove('btn-primary');
-            connectBtn.classList.add('btn-secondary');
-            connectBtn.style.background = 'rgba(255, 100, 100, 0.2)';
-            connectBtn.style.color = '#ff6b6b';
-            connectBtn.style.border = '1px solid rgba(255, 100, 100, 0.4)';
+            if (connectBtn) {
+                connectBtn.disabled = false;
+                connectBtn.innerText = 'Disconnect';
+                connectBtn.classList.remove('btn-primary');
+                connectBtn.classList.add('btn-secondary');
+                connectBtn.style.background = 'rgba(255, 100, 100, 0.2)';
+                connectBtn.style.color = '#ff6b6b';
+                connectBtn.style.border = '1px solid rgba(255, 100, 100, 0.4)';
+            }
 
             // Style Manual Connect Button as Disconnect
-            manualConnectBtn.disabled = false;
-            manualConnectBtn.innerText = 'Disconnect';
-            manualConnectBtn.classList.remove('btn-primary');
-            manualConnectBtn.classList.add('btn-secondary');
-            manualConnectBtn.style.background = 'rgba(255, 100, 100, 0.2)';
-            manualConnectBtn.style.color = '#ff6b6b';
-            manualConnectBtn.style.border = '1px solid rgba(255, 100, 100, 0.4)';
+            if (manualConnectBtn) {
+                manualConnectBtn.disabled = false;
+                manualConnectBtn.innerText = 'Disconnect';
+                manualConnectBtn.classList.remove('btn-primary');
+                manualConnectBtn.classList.add('btn-secondary');
+                manualConnectBtn.style.background = 'rgba(255, 100, 100, 0.2)';
+                manualConnectBtn.style.color = '#ff6b6b';
+                manualConnectBtn.style.border = '1px solid rgba(255, 100, 100, 0.4)';
+            }
         } else {
             // Revert Main Connect Button
-            connectBtn.disabled = false;
-            connectBtn.innerText = 'Connect Chat';
-            connectBtn.classList.add('btn-primary');
-            connectBtn.classList.remove('btn-secondary');
-            connectBtn.style.background = '';
-            connectBtn.style.color = '';
-            connectBtn.style.border = '';
+            if (connectBtn) {
+                connectBtn.disabled = false;
+                connectBtn.innerText = 'Connect Chat';
+                connectBtn.classList.add('btn-primary');
+                connectBtn.classList.remove('btn-secondary');
+                connectBtn.style.background = '';
+                connectBtn.style.color = '';
+                connectBtn.style.border = '';
+            }
 
             // Revert Manual Connect Button
-            manualConnectBtn.disabled = false;
-            manualConnectBtn.innerText = 'Connect';
-            manualConnectBtn.classList.add('btn-primary');
-            manualConnectBtn.classList.remove('btn-secondary');
-            manualConnectBtn.style.background = '';
-            manualConnectBtn.style.color = '';
-            manualConnectBtn.style.border = '';
+            if (manualConnectBtn) {
+                manualConnectBtn.disabled = false;
+                manualConnectBtn.innerText = 'Connect';
+                manualConnectBtn.classList.add('btn-primary');
+                manualConnectBtn.classList.remove('btn-secondary');
+                manualConnectBtn.style.background = '';
+                manualConnectBtn.style.color = '';
+                manualConnectBtn.style.border = '';
+            }
         }
     }
 
@@ -316,78 +352,102 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!isOBS) {
         // Connect to Kick
-        connectBtn.addEventListener('click', async () => {
-            if (isConnected) {
-                disconnectFromKick();
-                return;
-            }
+        if (connectBtn) {
+            connectBtn.addEventListener('click', async () => {
+                if (isConnected) {
+                    disconnectFromKick();
+                    return;
+                }
 
-            const username = kickUsernameInput.value.trim();
-            if (!username) return alert('Please enter a Kick username');
-            await connectToKick(username);
-        });
+                const username = kickUsernameInput.value.trim();
+                if (!username) return alert('Please enter a Kick username');
+                await connectToKick(username);
+            });
+        }
 
         // Manual Connect
-        document.getElementById('manual-connect-btn').addEventListener('click', () => {
-            if (isConnected) {
-                disconnectFromKick();
-                return;
-            }
+        const manualConnectBtn = document.getElementById('manual-connect-btn');
+        if (manualConnectBtn) {
+            manualConnectBtn.addEventListener('click', () => {
+                if (isConnected) {
+                    disconnectFromKick();
+                    return;
+                }
 
-            const id = document.getElementById('channel-id').value.trim();
-            if (!id) return alert('Please enter a Channel ID');
-            connectWithId(id);
-        });
+                const id = document.getElementById('channel-id').value.trim();
+                if (!id) return alert('Please enter a Channel ID');
+                connectWithId(id);
+            });
+        }
 
         // Mode Toggle Logic
-        modeToggle.addEventListener('change', () => {
-            isGiveawayMode = modeToggle.checked;
-            if (isGiveawayMode) {
-                modeLabel.innerText = "Giveaway Mode";
-                instructionBanner.innerHTML = 'use <span>!giveaway</span> to enter giveaway!';
-                localStorage.setItem('kick_wheel_mode', 'giveaway');
-            } else {
-                modeLabel.innerText = "Slot Call Mode";
-                instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
-                localStorage.setItem('kick_wheel_mode', 'slotcall');
-            }
-        });
+        if (modeToggle) {
+            modeToggle.addEventListener('change', () => {
+                isGiveawayMode = modeToggle.checked;
+                if (isGiveawayMode) {
+                    modeLabel.innerText = "Giveaway Mode";
+                    instructionBanner.innerHTML = 'use <span>!giveaway</span> to enter giveaway!';
+                    localStorage.setItem('kick_wheel_mode', 'giveaway');
+                } else {
+                    modeLabel.innerText = "Slot Call Mode";
+                    instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
+                    localStorage.setItem('kick_wheel_mode', 'slotcall');
+                }
+            });
+        }
         
         // Clear Queue
-        clearQueueBtn.addEventListener('click', () => {
-            if (wheel.isSpinning) return;
-            queue.length = 0;
-            updateQueueUI();
-            localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-            wheel.clear();
-        });
+        if (clearQueueBtn) {
+            clearQueueBtn.addEventListener('click', () => {
+                if (wheel.isSpinning) return;
+                queue.length = 0;
+                updateQueueUI();
+                localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
+                wheel.clear();
+            });
+        }
 
         // Spin Button Click Handler (Dashboard host tab only)
-        spinBtn.addEventListener('click', () => {
-            if (queue.length === 0) return alert('Queue is empty!');
-            if (wheel.isSpinning) return;
+        if (spinBtn) {
+            spinBtn.addEventListener('click', () => {
+                if (queue.length === 0) return alert('Queue is empty!');
+                if (wheel.isSpinning) return;
 
-            const spinResult = wheel.spin((winner) => {
-                console.log('Winner selected:', winner);
-                setTimeout(() => {
-                    showWinner(winner);
-                    wheel.updateSegments(queue);
-                }, 600);
+                const spinResult = wheel.spin((winner) => {
+                    console.log('Winner selected:', winner);
+                    setTimeout(() => {
+                        showWinner(winner);
+                        wheel.updateSegments(queue);
+                    }, 600);
+                });
+
+                // Broadcast the spin event details to the OBS overlay window
+                localStorage.setItem('kick_wheel_spin_event', JSON.stringify({
+                    timestamp: Date.now(),
+                    winnerIndex: spinResult.winnerIndex,
+                    duration: spinResult.duration
+                }));
             });
-
-            // Broadcast the spin event details to the OBS overlay window
-            localStorage.setItem('kick_wheel_spin_event', JSON.stringify({
-                timestamp: Date.now(),
-                winnerIndex: spinResult.winnerIndex,
-                duration: spinResult.duration
-            }));
-        });
+        }
 
         // Copy OBS Link Logic
         if (copyObsBtn) {
             copyObsBtn.addEventListener('click', () => {
                 const url = new URL(window.location.href);
                 url.searchParams.set('obs', 'true');
+
+                // Auto-embed current active connection parameters for OBS out-of-the-box auto-connect
+                const activeUsername = kickUsernameInput.value.trim();
+                if (activeUsername) {
+                    url.searchParams.set('username', activeUsername);
+                }
+
+                const manualIdField = document.getElementById('channel-id');
+                const activeChannelId = manualIdField ? manualIdField.value.trim() : '';
+                if (activeChannelId) {
+                    url.searchParams.set('channel_id', activeChannelId);
+                }
+
                 const obsUrl = url.toString();
 
                 navigator.clipboard.writeText(obsUrl).then(() => {
@@ -403,14 +463,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Unified Message Handler (Dashboard only)
+    // Unified Message Handler (Both Dashboard and OBS Overlay)
     function handleKickMessage(msg) {
-        if (isOBS) return;
         if (!msg || !msg.content || typeof msg.content !== 'string') return;
 
         const content = msg.content.trim();
         const lowerContent = content.toLowerCase();
 
+        // Broadcaster chat command overrides (Sync across tabs)
+        const currentChannelName = connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '';
+        const isStreamer = currentChannelName && msg.sender.username.toLowerCase() === currentChannelName.toLowerCase();
+        
+        if (isStreamer) {
+            if (lowerContent === '!spin') {
+                if (queue.length > 0 && !wheel.isSpinning) {
+                    const spinResult = wheel.spin((winner) => {
+                        setTimeout(() => {
+                            showWinner(winner);
+                            wheel.updateSegments(queue);
+                        }, 600);
+                    });
+
+                    // Only the window triggering the logic broadcasts the spin parameter
+                    localStorage.setItem('kick_wheel_spin_event', JSON.stringify({
+                        timestamp: Date.now(),
+                        winnerIndex: spinResult.winnerIndex,
+                        duration: spinResult.duration
+                    }));
+                }
+                return;
+            }
+            if (lowerContent === '!clear') {
+                if (!wheel.isSpinning) {
+                    queue.length = 0;
+                    updateQueueUI();
+                    localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
+                    wheel.clear();
+                }
+                return;
+            }
+        }
+
+        // Standard caller commands
         if (isGiveawayMode) {
             if (lowerContent.startsWith('!giveaway')) {
                 addToQueue({
@@ -437,9 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Close Modal Handler (Broadcasts modal dismissal to OBS overlay)
     function dismissWinnerModal() {
         winnerModal.classList.remove('active');
-        if (!isOBS) {
-            localStorage.setItem('kick_wheel_modal_active', 'false');
-        }
+        localStorage.setItem('kick_wheel_modal_active', 'false');
     }
 
     // Close buttons inside Winner Modal
@@ -497,6 +589,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'kick_wheel_spin_event' && e.newValue) {
             try {
                 const eventData = JSON.parse(e.newValue);
+                if (wheel.isSpinning) return;
+                
                 // Trigger exact same spin math parameters
                 wheel.spin((winner) => {
                     setTimeout(() => {
