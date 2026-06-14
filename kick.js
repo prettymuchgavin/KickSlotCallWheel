@@ -60,6 +60,16 @@ class KickClient {
         });
     }
 
+    disconnect() {
+        if (this.pusher) {
+            this.pusher.disconnect();
+            this.pusher = null;
+            this.channel = null;
+            this.chatroomId = null;
+            console.log('Disconnected from Kick chat');
+        }
+    }
+
     async getChatroomId(username) {
         // We'll try to fetch from a proxy or direct. 
         // Direct fetch to kick.com/api/v1/channels/{slug} often blocks due to cloudflare.
