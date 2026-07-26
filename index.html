@@ -42,12 +42,15 @@
                 </div>
 
                 <div class="entries-toggle-container"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                    style="position: relative; margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
                     <span id="entries-label" style="font-size: 0.9rem; font-weight: 600; color: var(--kick-green);">Entries Open</span>
                     <label class="switch">
                         <input type="checkbox" id="accept-entries-toggle" checked>
                         <span class="slider round"></span>
                     </label>
+                    <div id="entries-reminder-popup" class="reminder-popup" style="display: none;">
+                        remember to turn on entries!
+                    </div>
                 </div>
 
                 <div id="giveaway-settings-container" style="display: none; margin-top: 12px; background: rgba(0, 0, 0, 0.25); padding: 10px 12px; border-radius: 8px; border: var(--glass-border);">

@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hideKeywordToggle = document.getElementById('hide-keyword-toggle');
     const acceptEntriesToggle = document.getElementById('accept-entries-toggle');
     const entriesLabel = document.getElementById('entries-label');
+    const entriesReminderPopup = document.getElementById('entries-reminder-popup');
 
     // Modal Elements
     const winnerModal = document.getElementById('winner-modal');
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Multi-Wheel State
     let wheelCount = 1;
     const wheels = [];
+    let entriesClosedTimer = null;
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -94,6 +96,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeLabel = document.getElementById('mode-label');
     const instructionBanner = document.querySelector('.instruction-banner');
 
+    function checkEntriesReminderTimer() {
+        if (entriesClosedTimer) {
+            clearTimeout(entriesClosedTimer);
+            entriesClosedTimer = null;
+        }
+
+        if (!acceptEntries) {
+            entriesClosedTimer = setTimeout(() => {
+                if (!acceptEntries && entriesReminderPopup) {
+                    entriesReminderPopup.style.display = 'block';
+                }
+            }, 15000);
+        } else {
+            if (entriesReminderPopup) {
+                entriesReminderPopup.style.display = 'none';
+            }
+        }
+    }
+
     function updateEntriesUI() {
         if (entriesLabel) {
             if (acceptEntries) {
@@ -104,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 entriesLabel.style.color = '#ff6b6b';
             }
         }
+        checkEntriesReminderTimer();
     }
 
     function updateInstructionBanner() {
@@ -714,6 +736,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('kick_wheel_accept_entries', acceptEntries ? 'true' : 'false');
                 updateEntriesUI();
                 updateInstructionBanner();
+            });
+        }
+
+        if (entriesReminderPopup) {
+            entriesReminderPopup.addEventListener('click', () => {
+                entriesReminderPopup.style.display = 'none';
             });
         }
 

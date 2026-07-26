@@ -542,6 +542,45 @@ canvas.wheel-canvas {
   margin-right: 4px;
 }
 
+/* Entries Reminder Popup */
+.reminder-popup {
+  position: absolute;
+  top: -42px;
+  right: 0;
+  background: #FF5E5B;
+  color: #ffffff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(255, 94, 91, 0.5);
+  z-index: 50;
+  animation: bounceReminder 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+
+.reminder-popup::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 16px;
+  border-width: 6px 6px 0 6px;
+  border-style: solid;
+  border-color: #FF5E5B transparent transparent transparent;
+}
+
+@keyframes bounceReminder {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 #clear-history-btn {
   background: rgba(255, 100, 100, 0.15);
   color: #ff6b6b;
