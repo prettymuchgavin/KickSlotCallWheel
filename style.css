@@ -202,77 +202,181 @@ input[type="number"]:focus {
 #stage {
   flex: 1;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
   position: relative;
   overflow: hidden;
-  padding: 2rem;
+  padding: 1.2rem 1.5rem;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Wheels Grid Wrapper */
+#wheels-wrapper {
+  display: grid;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100vh - 200px);
+  margin: auto;
+}
+
+#wheels-wrapper.wheels-1 {
+  grid-template-columns: 1fr;
+  max-width: min(60vh, 580px);
+}
+
+#wheels-wrapper.wheels-2 {
+  grid-template-columns: 1fr 1fr;
+  max-width: min(90vw, 850px);
+}
+
+#wheels-wrapper.wheels-3 {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: min(95vw, 950px);
+}
+
+#wheels-wrapper.wheels-4 {
+  grid-template-columns: 1fr 1fr;
+  max-width: min(80vw, 750px);
+}
+
+#wheels-wrapper.wheels-5 {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: min(95vw, 900px);
 }
 
 /* Wheel Container */
-#wheel-container {
+.wheel-container {
   position: relative;
-  width: 80vmin;
-  /* Responsive size */
-  height: 80vmin;
-  max-width: 600px;
-  max-height: 600px;
-  /* Filter for glow */
-  filter: drop-shadow(0 0 30px rgba(83, 252, 24, 0.15));
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: auto;
+  filter: drop-shadow(0 0 25px rgba(83, 252, 24, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-canvas#wheel-canvas {
+#wheels-wrapper.wheels-1 .wheel-container {
+  max-width: min(58vh, 580px);
+  max-height: min(58vh, 580px);
+}
+
+#wheels-wrapper.wheels-2 .wheel-container {
+  max-width: min(42vh, 380px);
+  max-height: min(42vh, 380px);
+}
+
+#wheels-wrapper.wheels-3 .wheel-container {
+  max-width: min(34vh, 300px);
+  max-height: min(34vh, 300px);
+}
+
+#wheels-wrapper.wheels-4 .wheel-container {
+  max-width: min(32vh, 270px);
+  max-height: min(32vh, 270px);
+}
+
+#wheels-wrapper.wheels-5 .wheel-container {
+  max-width: min(26vh, 230px);
+  max-height: min(26vh, 230px);
+}
+
+canvas.wheel-canvas {
   width: 100%;
   height: 100%;
 }
 
-/* Center Spin Button/Indicator */
-#spin-btn {
+/* Wheel Pointer Triangle on each wheel */
+.wheel-pointer {
+  position: absolute;
+  top: -3%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-bottom: 36px solid var(--kick-green);
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.7));
+  z-index: 15;
+  pointer-events: none;
+}
+
+/* Center Hub on each wheel */
+.wheel-center-hub {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 15%;
-  /* Responsive relative to container */
   height: 15%;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #fff, #ddd);
   border: 4px solid var(--bg-dark);
   box-shadow:
-    0 0 0 8px var(--kick-green),
-    0 0 30px 10px var(--kick-green-glow),
-    inset 0 -5px 10px rgba(0, 0, 0, 0.2);
-  z-index: 20;
+    0 0 0 6px var(--kick-green),
+    0 0 20px 5px var(--kick-green-glow);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Master SPIN Button */
+#spin-btn {
+  z-index: 25;
   cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   font-weight: 800;
   color: #000;
+  background: var(--kick-green);
+  box-shadow: 0 0 30px var(--kick-green-glow);
+  border: none;
+  border-radius: 50px;
+  padding: 0.9rem 2.8rem;
+  font-size: 1.3rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+/* Single Wheel Centered Spin Button Override */
+#spin-btn.single-wheel-spin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 15%;
+  height: 15%;
+  border-radius: 50%;
+  padding: 0;
+  margin-top: 0;
+  background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+  border: 4px solid var(--bg-dark);
+  box-shadow:
+    0 0 0 8px var(--kick-green),
+    0 0 30px 10px var(--kick-green-glow);
   font-size: 2.5vmin;
-  /* text scales */
-  transition: transform 0.1s;
+}
+
+#spin-btn:hover {
+  transform: scale(1.05);
+}
+
+#spin-btn.single-wheel-spin:hover {
+  transform: translate(-50%, -50%) scale(1.05);
 }
 
 #spin-btn:active {
-  transform: translate(-50%, -50%) scale(0.95);
+  transform: scale(0.95);
 }
 
-#spin-btn::after {
-  /* The pointer triangle */
-  content: '';
-  position: absolute;
-  top: -40%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 2vmin solid transparent;
-  border-right: 2vmin solid transparent;
-  border-bottom: 5vmin solid var(--kick-green);
-  /* Responsive triangle */
-  filter: drop-shadow(0 -2px 5px rgba(0, 0, 0, 0.5));
-  pointer-events: none;
+#spin-btn.single-wheel-spin:active {
+  transform: translate(-50%, -50%) scale(0.95);
 }
 
 /* Winner Modal/Popup */
@@ -302,13 +406,15 @@ canvas#wheel-canvas {
 .winner-card {
   background: var(--bg-dark);
   border: 2px solid var(--kick-green);
-  padding: 3rem;
+  padding: 2.5rem;
   border-radius: 20px;
   text-align: center;
   box-shadow: 0 0 50px var(--kick-green-glow);
   transform: scale(0.8);
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   max-width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 #winner-modal.active .winner-card {
@@ -322,6 +428,31 @@ canvas#wheel-canvas {
   padding: 0.5rem 1rem;
   border-radius: 50px;
   display: inline-block;
+}
+
+/* Winner Chat History Scrollbar */
+.winner-chat-history {
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.winner-chat-history::-webkit-scrollbar {
+  width: 6px;
+}
+
+.winner-chat-history::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.winner-chat-history::-webkit-scrollbar-thumb {
+  background: rgba(83, 252, 24, 0.5);
+  border-radius: 4px;
+}
+
+.winner-chat-history::-webkit-scrollbar-thumb:hover {
+  background: var(--kick-green);
 }
 
 /* Animations */
@@ -411,14 +542,35 @@ canvas#wheel-canvas {
   margin-right: 4px;
 }
 
+#clear-history-btn {
+  background: rgba(255, 100, 100, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: 20px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 0.8rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#clear-history-btn:hover {
+  background: rgba(255, 100, 100, 0.35);
+  color: #fff;
+  transform: scale(1.05);
+}
+
 /* Ko-fi Button */
 .kofi-btn {
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  top: 1.5rem;
+  right: 1.5rem;
   background: #FF5E5B;
   color: #fff;
-  padding: 0.8rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 50px;
   text-decoration: none;
   font-weight: 700;
@@ -539,15 +691,29 @@ body.obs-mode #stage {
   align-items: center;
 }
 
-body.obs-mode #wheel-container {
-  width: 70vh;
-  height: 70vh;
-  max-width: 90vw;
-  max-height: 90vw;
-  margin-bottom: 2rem;
+body.obs-mode #wheels-wrapper {
+  max-height: 75vh;
+  margin-bottom: 1rem;
 }
 
-body.obs-mode #spin-btn {
+body.obs-mode .wheel-container {
+  max-width: 65vh;
+  max-height: 65vh;
+}
+
+body.obs-mode #wheels-wrapper.wheels-2 .wheel-container,
+body.obs-mode #wheels-wrapper.wheels-3 .wheel-container,
+body.obs-mode #wheels-wrapper.wheels-4 .wheel-container {
+  max-width: 35vh;
+  max-height: 35vh;
+}
+
+body.obs-mode #wheels-wrapper.wheels-5 .wheel-container {
+  max-width: 28vh;
+  max-height: 28vh;
+}
+
+body.obs-mode .spin-btn {
   pointer-events: none; /* Disables clicking in OBS */
   font-size: 0 !important; /* Hides "SPIN" text */
   box-shadow: 

@@ -84,9 +84,21 @@ class KickClient {
             return data.chatroom.id;
         } catch (error) {
             console.warn('Direct fetch failed. Trying fallback or throwing.', error);
-            // In a real app we might use a CORS proxy. 
-            // For this local tool, we might fallback to asking user.
             throw error;
         }
+    }
+
+    async getUserFollowInfo(channelUsername, username) {
+        if (!channelUsername || !username) return null;
+        try {
+            const url = `https://kick.com/api/v2/channels/${channelUsername}/users/${username}`;
+            const response = await fetch(url);
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (e) {
+            console.warn('Follow info fetch error:', e);
+        }
+        return null;
     }
 }

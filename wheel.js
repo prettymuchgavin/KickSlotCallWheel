@@ -1,6 +1,6 @@
 class Wheel {
     constructor(canvasId) {
-        this.canvas = document.getElementById(canvasId);
+        this.canvas = typeof canvasId === 'string' ? document.getElementById(canvasId) : canvasId;
         this.ctx = this.canvas.getContext('2d');
 
         // Configuration

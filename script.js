@@ -12,21 +12,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const kickUsernameInput = document.getElementById('kick-username');
     const connectBtn = document.getElementById('connect-btn');
-    const spinBtn = document.getElementById('spin-btn');
     const queueContainer = document.getElementById('queue-container');
     const queueCount = document.getElementById('queue-count');
     const clearQueueBtn = document.getElementById('clear-queue-btn');
-    const copyObsBtn = document.getElementById('copy-obs-btn');
-    const copyStatus = document.getElementById('copy-status');
+    const wheelCountSelect = document.getElementById('wheel-count-select');
+    const wheelsWrapper = document.getElementById('wheels-wrapper');
+    const spinBtn = document.getElementById('spin-btn');
+    const giveawaySettingsContainer = document.getElementById('giveaway-settings-container');
+    const giveawayKeywordInput = document.getElementById('giveaway-keyword-input');
+    const hideKeywordToggle = document.getElementById('hide-keyword-toggle');
+    const acceptEntriesToggle = document.getElementById('accept-entries-toggle');
+    const entriesLabel = document.getElementById('entries-label');
 
     // Modal Elements
     const winnerModal = document.getElementById('winner-modal');
-    const winnerName = document.getElementById('winner-name');
-    const winnerSlot = document.getElementById('winner-slot');
 
-    // Initialize Modules
-    const wheel = new Wheel('wheel-canvas');
+    // Initialize Kick Client
     const kickHandler = new KickClient();
+
+    // Multi-Wheel State
+    let wheelCount = 1;
+    const wheels = [];
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -51,14 +57,135 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     const queue = []; // Array of { username, slot_name, color }
     const history = []; // Array of { username, slot_name }
+    const chatLogs = []; // Array of { username, content, timestamp }
+    const userMeta = {}; // Object mapping username -> { createdAt, badges }
     let isConnected = false;
     let isGiveawayMode = false;
     let connectedUsername = '';
+    let giveawayKeyword = '!giveaway';
+    let hideGiveawayKeyword = false;
+    let acceptEntries = true;
 
-    // --- Mode Toggle DOM Elements ---
+    // --- Time Format Helpers ---
+    function formatTimeAgo(timestamp) {
+        const diff = Math.floor((Date.now() - timestamp) / 1000);
+        if (diff < 60) return `${diff}s ago`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+    }
+
+    function formatDuration(dateString) {
+        if (!dateString) return 'Unknown';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Unknown';
+        const diffMs = Date.now() - date.getTime();
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (days < 1) return 'less than a day';
+        if (days < 30) return `${days} day${days > 1 ? 's' : ''}`;
+        const months = Math.floor(days / 30);
+        if (months < 12) return `${months} month${months > 1 ? 's' : ''} (${days}d)`;
+        const years = (days / 365).toFixed(1);
+        return `${years} year${years !== '1.0' ? 's' : ''} (${days}d)`;
+    }
+
+    // --- Mode & Entries Toggle DOM Elements ---
     const modeToggle = document.getElementById('mode-toggle');
     const modeLabel = document.getElementById('mode-label');
     const instructionBanner = document.querySelector('.instruction-banner');
+
+    function updateEntriesUI() {
+        if (entriesLabel) {
+            if (acceptEntries) {
+                entriesLabel.innerText = 'Entries Open';
+                entriesLabel.style.color = 'var(--kick-green)';
+            } else {
+                entriesLabel.innerText = 'Entries Closed';
+                entriesLabel.style.color = '#ff6b6b';
+            }
+        }
+    }
+
+    function updateInstructionBanner() {
+        if (giveawayKeywordInput) {
+            giveawayKeywordInput.type = hideGiveawayKeyword ? 'password' : 'text';
+        }
+        if (!instructionBanner) return;
+
+        if (!acceptEntries) {
+            instructionBanner.style.display = 'block';
+            instructionBanner.innerHTML = '<span>Entries Closed</span>';
+            if (giveawaySettingsContainer) giveawaySettingsContainer.style.display = isGiveawayMode ? 'block' : 'none';
+            return;
+        }
+
+        if (isGiveawayMode) {
+            if (giveawaySettingsContainer) giveawaySettingsContainer.style.display = 'block';
+            if (hideGiveawayKeyword) {
+                instructionBanner.style.display = 'none';
+            } else {
+                instructionBanner.style.display = 'block';
+                const kw = giveawayKeyword || '!giveaway';
+                instructionBanner.innerHTML = `use <span>${kw}</span> to enter giveaway!`;
+            }
+        } else {
+            if (giveawaySettingsContainer) giveawaySettingsContainer.style.display = 'none';
+            instructionBanner.style.display = 'block';
+            instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
+        }
+    }
+
+    // --- Dynamic Wheel Setup ---
+    function setupWheels(count) {
+        wheelCount = parseInt(count, 10) || 1;
+        if (wheelsWrapper) {
+            wheelsWrapper.className = `wheels-grid wheels-${wheelCount}`;
+            wheelsWrapper.innerHTML = '';
+        }
+        wheels.length = 0;
+
+        let firstContainer = null;
+        for (let i = 0; i < wheelCount; i++) {
+            const container = document.createElement('div');
+            container.className = 'wheel-container';
+            
+            const pointer = document.createElement('div');
+            pointer.className = 'wheel-pointer';
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'wheel-canvas';
+            canvas.width = 800;
+            canvas.height = 800;
+            
+            const centerHub = document.createElement('div');
+            centerHub.className = 'wheel-center-hub';
+
+            container.appendChild(pointer);
+            container.appendChild(canvas);
+            container.appendChild(centerHub);
+            if (wheelsWrapper) wheelsWrapper.appendChild(container);
+
+            if (i === 0) firstContainer = container;
+
+            const wheelInstance = new Wheel(canvas);
+            wheelInstance.updateSegments(queue);
+            wheels.push(wheelInstance);
+        }
+
+        if (spinBtn) {
+            if (wheelCount === 1 && firstContainer) {
+                firstContainer.appendChild(spinBtn);
+                spinBtn.classList.add('single-wheel-spin');
+                spinBtn.innerText = 'SPIN';
+            } else {
+                if (wheelsWrapper && wheelsWrapper.parentNode) {
+                    wheelsWrapper.parentNode.insertBefore(spinBtn, wheelsWrapper.nextSibling);
+                }
+                spinBtn.classList.remove('single-wheel-spin');
+                spinBtn.innerText = `SPIN ALL (${wheelCount})`;
+            }
+        }
+    }
 
     // --- Load Saved Settings & Queue from LocalStorage ---
     
@@ -88,27 +215,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. Load Mode
-    const savedMode = localStorage.getItem('kick_wheel_mode');
-    if (savedMode === 'giveaway') {
-        isGiveawayMode = true;
-        if (modeToggle) modeToggle.checked = true;
-        if (modeLabel) modeLabel.innerText = "Giveaway Mode";
-        instructionBanner.innerHTML = 'use <span>!giveaway</span> to enter giveaway!';
-    } else {
-        isGiveawayMode = false;
-        if (modeToggle) modeToggle.checked = false;
-        if (modeLabel) modeLabel.innerText = "Slot Call Mode";
-        instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
+    // 3. Load Chat Logs & User Meta
+    const savedChatLogs = localStorage.getItem('kick_wheel_chat_logs');
+    if (savedChatLogs) {
+        try {
+            const parsed = JSON.parse(savedChatLogs);
+            if (Array.isArray(parsed)) {
+                const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
+                chatLogs.push(...parsed.filter(m => m.timestamp >= twoDaysAgo));
+            }
+        } catch (e) {
+            console.error('Failed to parse saved chat logs', e);
+        }
     }
 
-    // 4. Update UI with Loaded Data
+    const savedUserMeta = localStorage.getItem('kick_wheel_user_meta');
+    if (savedUserMeta) {
+        try {
+            const parsed = JSON.parse(savedUserMeta);
+            Object.assign(userMeta, parsed);
+        } catch (e) {
+            console.error('Failed to parse saved user meta', e);
+        }
+    }
+
+    // 4. Load Mode, Giveaway & Entry Settings
+    const savedMode = localStorage.getItem('kick_wheel_mode');
+    isGiveawayMode = savedMode === 'giveaway';
+    if (modeToggle) modeToggle.checked = isGiveawayMode;
+    if (modeLabel) modeLabel.innerText = isGiveawayMode ? "Giveaway Mode" : "Slot Call Mode";
+
+    const savedKeyword = localStorage.getItem('kick_wheel_giveaway_keyword');
+    if (savedKeyword) {
+        giveawayKeyword = savedKeyword;
+        if (giveawayKeywordInput) giveawayKeywordInput.value = giveawayKeyword;
+    }
+
+    const savedHideKeyword = localStorage.getItem('kick_wheel_hide_keyword') === 'true';
+    hideGiveawayKeyword = savedHideKeyword;
+    if (hideKeywordToggle) hideKeywordToggle.checked = hideGiveawayKeyword;
+
+    const savedAcceptEntries = localStorage.getItem('kick_wheel_accept_entries');
+    if (savedAcceptEntries !== null) {
+        acceptEntries = savedAcceptEntries === 'true';
+        if (acceptEntriesToggle) acceptEntriesToggle.checked = acceptEntries;
+    }
+
+    updateEntriesUI();
+    updateInstructionBanner();
+
+    // 5. Load Wheel Count
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryWheelCount = urlParams.get('wheels') || urlParams.get('count');
+    const savedWheelCount = queryWheelCount || localStorage.getItem('kick_wheel_count') || '1';
+    if (wheelCountSelect) wheelCountSelect.value = savedWheelCount;
+    setupWheels(savedWheelCount);
+
+    // 6. Update UI with Loaded Data
     updateQueueUI();
     updateHistoryUI();
-    wheel.updateSegments(queue);
 
-    // 5. OBS URL Parameters Check (Highest priority for OBS connection)
-    const urlParams = new URLSearchParams(window.location.search);
+    // 7. OBS URL Parameters Check (Highest priority for OBS connection)
     const queryUsername = urlParams.get('username') || urlParams.get('user');
     const queryChannelId = urlParams.get('channel_id') || urlParams.get('channelId') || urlParams.get('id');
 
@@ -158,18 +325,18 @@ document.addEventListener('DOMContentLoaded', () => {
         updateQueueUI();
         localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
         
-        // Defer updating segment colors/sizes if wheel is spinning to avoid mid-spin glitching
-        if (!wheel.isSpinning) {
-            wheel.updateSegments(queue);
+        // Defer updating segment colors/sizes if any wheel is spinning
+        if (!wheels.some(w => w.isSpinning)) {
+            wheels.forEach(w => w.updateSegments(queue));
         }
     }
 
     function removeFromQueue(index) {
-        if (wheel.isSpinning) return;
+        if (wheels.some(w => w.isSpinning)) return;
         queue.splice(index, 1);
         updateQueueUI();
         localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-        wheel.updateSegments(queue);
+        wheels.forEach(w => w.updateSegments(queue));
     }
 
     function updateQueueUI() {
@@ -177,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!queueContainer) return;
         
         queueContainer.innerHTML = '';
-        queueCount.innerText = queue.length;
+        if (queueCount) queueCount.innerText = queue.length;
 
         queue.forEach((user, index) => {
             const item = document.createElement('div');
@@ -201,21 +368,170 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function showWinner(winner) {
-        winnerName.innerText = winner.username;
-        winnerSlot.innerText = winner.slot_name;
+    function triggerMultiSpin(forcedWinners = null, forcedDuration = null) {
+        if (queue.length === 0) return alert('Queue is empty!');
+        if (wheels.some(w => w.isSpinning)) return;
+
+        // Automatically close entries when spin starts
+        acceptEntries = false;
+        if (acceptEntriesToggle) acceptEntriesToggle.checked = false;
+        localStorage.setItem('kick_wheel_accept_entries', 'false');
+        updateEntriesUI();
+        updateInstructionBanner();
+
+        const winnerIndices = [];
+        const winners = [];
+        const usedUsernames = new Set();
+        const duration = forcedDuration !== null ? forcedDuration : (4200 + Math.random() * 800);
+
+        for (let i = 0; i < wheels.length; i++) {
+            let winnerIdx;
+            if (forcedWinners && forcedWinners[i] !== undefined) {
+                winnerIdx = forcedWinners[i];
+            } else {
+                if (usedUsernames.size < queue.length) {
+                    do {
+                        winnerIdx = Math.floor(Math.random() * queue.length);
+                    } while (usedUsernames.has(queue[winnerIdx].username.toLowerCase()));
+                } else {
+                    winnerIdx = Math.floor(Math.random() * queue.length);
+                }
+            }
+            if (queue[winnerIdx]) {
+                usedUsernames.add(queue[winnerIdx].username.toLowerCase());
+            }
+            winnerIndices.push(winnerIdx);
+        }
+
+        let finishedCount = 0;
+        wheels.forEach((w, i) => {
+            const winIdx = winnerIndices[i];
+            w.spin((winner) => {
+                winners[i] = winner;
+                finishedCount++;
+                if (finishedCount === wheels.length) {
+                    setTimeout(() => {
+                        showWinners(winners);
+                        // Remove winners from queue so one person cannot win multiple times
+                        if (!isOBS) {
+                            winners.forEach(winnerObj => {
+                                const idx = queue.findIndex(u => u.username.toLowerCase() === winnerObj.username.toLowerCase());
+                                if (idx !== -1) queue.splice(idx, 1);
+                            });
+                            updateQueueUI();
+                            localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
+                        }
+                        wheels.forEach(wh => wh.updateSegments(queue));
+                    }, 600);
+                }
+            }, winIdx, duration);
+        });
+
+        // Broadcast to OBS window if triggered on Host window
+        if (!isOBS && !forcedWinners) {
+            localStorage.setItem('kick_wheel_spin_event', JSON.stringify({
+                timestamp: Date.now(),
+                winnerIndices: winnerIndices,
+                duration: duration
+            }));
+        }
+    }
+
+    function showWinners(winnersArray) {
+        const modalTitle = document.getElementById('winner-modal-title');
+        const container = document.getElementById('winners-container');
+        if (!container) return;
+
+        if (modalTitle) {
+            modalTitle.innerText = winnersArray.length > 1 ? `Winners (${winnersArray.length})!` : 'Winner!';
+        }
+
+        container.innerHTML = '';
+        winnersArray.forEach(winner => {
+            const card = document.createElement('div');
+            card.className = 'winner-card-item';
+            card.style.textAlign = 'center';
+            card.style.background = 'rgba(255, 255, 255, 0.05)';
+            card.style.padding = '1.2rem 1.5rem';
+            card.style.borderRadius = '14px';
+            card.style.border = '1px solid rgba(83, 252, 24, 0.3)';
+            card.style.minWidth = '260px';
+            card.style.maxWidth = '340px';
+
+            const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
+            const userMsgs = chatLogs.filter(m => 
+                m.username.toLowerCase() === winner.username.toLowerCase() && m.timestamp >= twoDaysAgo
+            );
+
+            let userMessagesHtml = '';
+            if (userMsgs.length === 0) {
+                userMessagesHtml = '<div style="color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No recent chat messages logged</div>';
+            } else {
+                userMessagesHtml = userMsgs.slice(-5).reverse().map(m => `
+                    <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; padding: 2px 0;">
+                        <span style="color: #eee; word-break: break-word; text-align: left;">"${m.content}"</span>
+                        <span style="color: var(--text-secondary); white-space: nowrap; font-size: 0.75rem;">${formatTimeAgo(m.timestamp)}</span>
+                    </div>
+                `).join('');
+            }
+
+            card.innerHTML = `
+                <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: var(--kick-green); margin-bottom: 0.3rem;">${winner.username}</div>
+                <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name}</div>
+                
+                <div class="winner-details-box" style="margin-top: 1.2rem; text-align: left; background: rgba(0,0,0,0.5); padding: 0.9rem; border-radius: 10px; border: var(--glass-border);">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--kick-green); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px;">
+                        <span>📅</span> <span class="follow-status-text">Checking follower info...</span>
+                    </div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; border-bottom: var(--glass-border); padding-bottom: 0.3rem;">
+                        💬 Messages (Past 2 Days):
+                    </div>
+                    <div class="winner-chat-history" style="display: flex; flex-direction: column; gap: 3px;">
+                        ${userMessagesHtml}
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            // Async fetch follow info
+            const followStatusEl = card.querySelector('.follow-status-text');
+            const channelSlug = connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '';
+
+            if (channelSlug) {
+                kickHandler.getUserFollowInfo(channelSlug, winner.username).then(info => {
+                    if (!followStatusEl) return;
+                    if (info && (info.following_since || info.followed_at || info.created_at)) {
+                        const dateStr = info.following_since || info.followed_at || info.created_at;
+                        const prefix = info.following_since ? 'Following for' : 'Member for';
+                        followStatusEl.innerText = `${prefix} ${formatDuration(dateStr)}`;
+                    } else {
+                        const meta = userMeta[winner.username.toLowerCase()];
+                        if (meta && meta.createdAt) {
+                            followStatusEl.innerText = `Kick user for ${formatDuration(meta.createdAt)}`;
+                        } else {
+                            followStatusEl.innerText = `Active channel follower`;
+                        }
+                    }
+                }).catch(() => {
+                    if (followStatusEl) followStatusEl.innerText = `Active channel follower`;
+                });
+            } else {
+                if (followStatusEl) followStatusEl.innerText = `Active channel follower`;
+            }
+        });
+
         winnerModal.classList.add('active');
 
         // Only host tab should modify history/persistence
         if (!isOBS) {
-            addToHistory(winner);
+            winnersArray.forEach(winner => addToHistory(winner));
             localStorage.setItem('kick_wheel_modal_active', 'true');
         }
     }
 
     function addToHistory(winner) {
         history.unshift(winner);
-        if (history.length > 5) {
+        if (history.length > 8) {
             history.pop();
         }
         localStorage.setItem('kick_wheel_history', JSON.stringify(history));
@@ -223,13 +539,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateHistoryUI() {
-        // Stacked slots for overlay only displays 4 most recent called slots
         const maxDisplay = isOBS ? 4 : 5;
         const list = document.getElementById('recent-list');
         if (!list) return;
         list.innerHTML = '';
         
-        // Take up to maxDisplay elements
         const itemsToDisplay = history.slice(0, maxDisplay);
         itemsToDisplay.forEach(winner => {
             const item = document.createElement('div');
@@ -302,7 +616,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const manualConnectBtn = document.getElementById('manual-connect-btn');
 
         if (connected) {
-            // Style Main Connect Button as Disconnect
             if (connectBtn) {
                 connectBtn.disabled = false;
                 connectBtn.innerText = 'Disconnect';
@@ -313,7 +626,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 connectBtn.style.border = '1px solid rgba(255, 100, 100, 0.4)';
             }
 
-            // Style Manual Connect Button as Disconnect
             if (manualConnectBtn) {
                 manualConnectBtn.disabled = false;
                 manualConnectBtn.innerText = 'Disconnect';
@@ -324,7 +636,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 manualConnectBtn.style.border = '1px solid rgba(255, 100, 100, 0.4)';
             }
         } else {
-            // Revert Main Connect Button
             if (connectBtn) {
                 connectBtn.disabled = false;
                 connectBtn.innerText = 'Connect Chat';
@@ -335,7 +646,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 connectBtn.style.border = '';
             }
 
-            // Revert Manual Connect Button
             if (manualConnectBtn) {
                 manualConnectBtn.disabled = false;
                 manualConnectBtn.innerText = 'Connect';
@@ -351,6 +661,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
 
     if (!isOBS) {
+        // Single Master Spin Button Click
+        if (spinBtn) {
+            spinBtn.addEventListener('click', () => {
+                triggerMultiSpin();
+            });
+        }
+
         // Connect to Kick
         if (connectBtn) {
             connectBtn.addEventListener('click', async () => {
@@ -384,81 +701,67 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modeToggle) {
             modeToggle.addEventListener('change', () => {
                 isGiveawayMode = modeToggle.checked;
-                if (isGiveawayMode) {
-                    modeLabel.innerText = "Giveaway Mode";
-                    instructionBanner.innerHTML = 'use <span>!giveaway</span> to enter giveaway!';
-                    localStorage.setItem('kick_wheel_mode', 'giveaway');
-                } else {
-                    modeLabel.innerText = "Slot Call Mode";
-                    instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
-                    localStorage.setItem('kick_wheel_mode', 'slotcall');
-                }
+                if (modeLabel) modeLabel.innerText = isGiveawayMode ? "Giveaway Mode" : "Slot Call Mode";
+                localStorage.setItem('kick_wheel_mode', isGiveawayMode ? 'giveaway' : 'slotcall');
+                updateInstructionBanner();
+            });
+        }
+
+        // Accept / Close Entries Toggle
+        if (acceptEntriesToggle) {
+            acceptEntriesToggle.addEventListener('change', () => {
+                acceptEntries = acceptEntriesToggle.checked;
+                localStorage.setItem('kick_wheel_accept_entries', acceptEntries ? 'true' : 'false');
+                updateEntriesUI();
+                updateInstructionBanner();
+            });
+        }
+
+        // Giveaway Custom Keyword Input
+        if (giveawayKeywordInput) {
+            giveawayKeywordInput.addEventListener('input', () => {
+                giveawayKeyword = giveawayKeywordInput.value.trim() || '!giveaway';
+                localStorage.setItem('kick_wheel_giveaway_keyword', giveawayKeyword);
+                updateInstructionBanner();
+            });
+        }
+
+        // Giveaway Hide Keyword Toggle
+        if (hideKeywordToggle) {
+            hideKeywordToggle.addEventListener('change', () => {
+                hideGiveawayKeyword = hideKeywordToggle.checked;
+                localStorage.setItem('kick_wheel_hide_keyword', hideGiveawayKeyword ? 'true' : 'false');
+                updateInstructionBanner();
+            });
+        }
+
+        // Wheel Count Selector
+        if (wheelCountSelect) {
+            wheelCountSelect.addEventListener('change', () => {
+                const count = wheelCountSelect.value;
+                setupWheels(count);
+                localStorage.setItem('kick_wheel_count', count);
             });
         }
         
         // Clear Queue
         if (clearQueueBtn) {
             clearQueueBtn.addEventListener('click', () => {
-                if (wheel.isSpinning) return;
+                if (wheels.some(w => w.isSpinning)) return;
                 queue.length = 0;
                 updateQueueUI();
                 localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-                wheel.clear();
+                wheels.forEach(w => w.clear());
             });
         }
 
-        // Spin Button Click Handler (Dashboard host tab only)
-        if (spinBtn) {
-            spinBtn.addEventListener('click', () => {
-                if (queue.length === 0) return alert('Queue is empty!');
-                if (wheel.isSpinning) return;
-
-                const spinResult = wheel.spin((winner) => {
-                    console.log('Winner selected:', winner);
-                    setTimeout(() => {
-                        showWinner(winner);
-                        wheel.updateSegments(queue);
-                    }, 600);
-                });
-
-                // Broadcast the spin event details to the OBS overlay window
-                localStorage.setItem('kick_wheel_spin_event', JSON.stringify({
-                    timestamp: Date.now(),
-                    winnerIndex: spinResult.winnerIndex,
-                    duration: spinResult.duration
-                }));
-            });
-        }
-
-        // Copy OBS Link Logic
-        if (copyObsBtn) {
-            copyObsBtn.addEventListener('click', () => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('obs', 'true');
-
-                // Auto-embed current active connection parameters for OBS out-of-the-box auto-connect
-                const activeUsername = kickUsernameInput.value.trim();
-                if (activeUsername) {
-                    url.searchParams.set('username', activeUsername);
-                }
-
-                const manualIdField = document.getElementById('channel-id');
-                const activeChannelId = manualIdField ? manualIdField.value.trim() : '';
-                if (activeChannelId) {
-                    url.searchParams.set('channel_id', activeChannelId);
-                }
-
-                const obsUrl = url.toString();
-
-                navigator.clipboard.writeText(obsUrl).then(() => {
-                    copyStatus.style.opacity = '1';
-                    setTimeout(() => {
-                        copyStatus.style.opacity = '0';
-                    }, 2500);
-                }).catch(err => {
-                    console.error('Failed to copy', err);
-                    alert('Could not copy automatically. URL is:\n' + obsUrl);
-                });
+        // Clear History
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+        if (clearHistoryBtn) {
+            clearHistoryBtn.addEventListener('click', () => {
+                history.length = 0;
+                localStorage.removeItem('kick_wheel_history');
+                updateHistoryUI();
             });
         }
     }
@@ -470,43 +773,62 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = msg.content.trim();
         const lowerContent = content.toLowerCase();
 
+        // Track user messages and metadata
+        if (msg.sender && msg.sender.username) {
+            const u = msg.sender.username;
+            chatLogs.push({
+                username: u,
+                content: content,
+                timestamp: Date.now()
+            });
+
+            const meta = userMeta[u.toLowerCase()] || {};
+            if (msg.sender.created_at) meta.createdAt = msg.sender.created_at;
+            if (msg.sender.identity && msg.sender.identity.badges) meta.badges = msg.sender.identity.badges;
+            userMeta[u.toLowerCase()] = meta;
+
+            // Prune older than 48 hours
+            const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
+            while (chatLogs.length > 0 && chatLogs[0].timestamp < twoDaysAgo) {
+                chatLogs.shift();
+            }
+
+            try {
+                localStorage.setItem('kick_wheel_chat_logs', JSON.stringify(chatLogs.slice(-300)));
+                localStorage.setItem('kick_wheel_user_meta', JSON.stringify(userMeta));
+            } catch(e) {}
+        }
+
         // Broadcaster chat command overrides (Sync across tabs)
         const currentChannelName = connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '';
         const isStreamer = currentChannelName && msg.sender.username.toLowerCase() === currentChannelName.toLowerCase();
         
         if (isStreamer) {
             if (lowerContent === '!spin') {
-                if (queue.length > 0 && !wheel.isSpinning) {
-                    const spinResult = wheel.spin((winner) => {
-                        setTimeout(() => {
-                            showWinner(winner);
-                            wheel.updateSegments(queue);
-                        }, 600);
-                    });
-
-                    // Only the window triggering the logic broadcasts the spin parameter
-                    localStorage.setItem('kick_wheel_spin_event', JSON.stringify({
-                        timestamp: Date.now(),
-                        winnerIndex: spinResult.winnerIndex,
-                        duration: spinResult.duration
-                    }));
+                if (queue.length > 0 && !wheels.some(w => w.isSpinning)) {
+                    triggerMultiSpin();
                 }
                 return;
             }
             if (lowerContent === '!clear') {
-                if (!wheel.isSpinning) {
+                if (!wheels.some(w => w.isSpinning)) {
                     queue.length = 0;
                     updateQueueUI();
                     localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-                    wheel.clear();
+                    wheels.forEach(w => w.clear());
                 }
                 return;
             }
         }
 
-        // Standard caller commands
+        // Standard caller commands - Check if entries are open
+        if (!acceptEntries) {
+            return;
+        }
+
         if (isGiveawayMode) {
-            if (lowerContent.startsWith('!giveaway')) {
+            const kw = (giveawayKeyword || '!giveaway').toLowerCase();
+            if (lowerContent.startsWith(kw)) {
                 addToQueue({
                     username: msg.sender.username,
                     slot_name: msg.sender.username,
@@ -556,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 queue.length = 0;
                 queue.push(...newQueue);
                 updateQueueUI();
-                wheel.updateSegments(queue);
+                wheels.forEach(w => w.updateSegments(queue));
             } catch (err) {
                 console.error(err);
             }
@@ -576,28 +898,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'kick_wheel_mode' && e.newValue) {
             isGiveawayMode = e.newValue === 'giveaway';
             if (modeToggle) modeToggle.checked = isGiveawayMode;
-            if (isGiveawayMode) {
-                if (modeLabel) modeLabel.innerText = "Giveaway Mode";
-                instructionBanner.innerHTML = 'use <span>!giveaway</span> to enter giveaway!';
-            } else {
-                if (modeLabel) modeLabel.innerText = "Slot Call Mode";
-                instructionBanner.innerHTML = 'use <span>!slotcall [name]</span> to call a slot!';
-            }
+            if (modeLabel) modeLabel.innerText = isGiveawayMode ? "Giveaway Mode" : "Slot Call Mode";
+            updateInstructionBanner();
+        }
+
+        if (e.key === 'kick_wheel_accept_entries' && e.newValue) {
+            acceptEntries = e.newValue === 'true';
+            if (acceptEntriesToggle) acceptEntriesToggle.checked = acceptEntries;
+            updateEntriesUI();
+            updateInstructionBanner();
+        }
+
+        if (e.key === 'kick_wheel_giveaway_keyword' && e.newValue) {
+            giveawayKeyword = e.newValue;
+            if (giveawayKeywordInput) giveawayKeywordInput.value = giveawayKeyword;
+            updateInstructionBanner();
+        }
+
+        if (e.key === 'kick_wheel_hide_keyword' && e.newValue) {
+            hideGiveawayKeyword = e.newValue === 'true';
+            if (hideKeywordToggle) hideKeywordToggle.checked = hideGiveawayKeyword;
+            updateInstructionBanner();
+        }
+
+        if (e.key === 'kick_wheel_count' && e.newValue) {
+            const count = e.newValue;
+            if (wheelCountSelect) wheelCountSelect.value = count;
+            setupWheels(count);
         }
 
         // Handle spin trigger sync for OBS view
         if (e.key === 'kick_wheel_spin_event' && e.newValue) {
             try {
                 const eventData = JSON.parse(e.newValue);
-                if (wheel.isSpinning) return;
+                if (wheels.some(w => w.isSpinning)) return;
                 
-                // Trigger exact same spin math parameters
-                wheel.spin((winner) => {
-                    setTimeout(() => {
-                        showWinner(winner);
-                        wheel.updateSegments(queue);
-                    }, 600);
-                }, eventData.winnerIndex, eventData.duration);
+                triggerMultiSpin(eventData.winnerIndices || [eventData.winnerIndex], eventData.duration);
             } catch (err) {
                 console.error(err);
             }
@@ -611,9 +947,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Animation Loop for Wheel
+    // Animation Loop for Wheels
     function animate() {
-        wheel.draw();
+        wheels.forEach(w => w.draw());
         requestAnimationFrame(animate);
     }
     animate();
