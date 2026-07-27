@@ -1236,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.1.1';
+        const CURRENT_VERSION = '1.1.2';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
@@ -1261,16 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkForUpdates();
         setInterval(checkForUpdates, 15 * 60 * 1000);
 
-        const hardRefreshBtn = document.getElementById('hard-refresh-btn');
         const dismissUpdateBtn = document.getElementById('dismiss-update-btn');
-
-        if (hardRefreshBtn) {
-            hardRefreshBtn.addEventListener('click', () => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('t', Date.now().toString());
-                window.location.href = url.toString();
-            });
-        }
 
         if (dismissUpdateBtn) {
             dismissUpdateBtn.addEventListener('click', () => {
