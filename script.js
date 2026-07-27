@@ -886,6 +886,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateHistoryUI();
             });
         }
+
+        // Info Button & Banner Popup
+        const infoBtn = document.getElementById('info-btn');
+        const infoBanner = document.getElementById('info-banner');
+        const closeInfoBanner = document.getElementById('close-info-banner');
+
+        if (infoBtn && infoBanner) {
+            infoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = infoBanner.style.display === 'none';
+                infoBanner.style.display = isHidden ? 'block' : 'none';
+            });
+        }
+
+        if (closeInfoBanner && infoBanner) {
+            closeInfoBanner.addEventListener('click', (e) => {
+                e.stopPropagation();
+                infoBanner.style.display = 'none';
+            });
+        }
     }
 
     // Unified Message Handler (Both Dashboard and OBS Overlay)

@@ -822,3 +822,89 @@ body.obs-mode #winner-modal {
 body.obs-mode .winner-card {
   box-shadow: 0 0 80px rgba(83, 252, 24, 0.6);
 }
+
+/* Bottom Corner Info Button & Banner Popup */
+#info-corner-container {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 40;
+}
+
+#info-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+#info-btn:hover {
+  transform: scale(1.1);
+  border-color: var(--kick-green);
+  box-shadow: 0 0 15px rgba(83, 252, 24, 0.4);
+}
+
+.info-banner-popup {
+  position: absolute;
+  bottom: 50px;
+  left: 0;
+  width: 290px;
+  background: rgba(18, 22, 28, 0.95);
+  border: 1px solid rgba(83, 252, 24, 0.4);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  animation: slideIn 0.3s ease-out;
+}
+
+.info-banner-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.info-banner-close:hover {
+  color: #fff;
+}
+
+.info-banner-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--kick-green);
+  margin-bottom: 0.5rem;
+}
+
+.info-banner-body {
+  font-size: 0.8rem;
+  color: #ddd;
+  line-height: 1.45;
+}
+
+.info-banner-body code {
+  background: rgba(83, 252, 24, 0.15);
+  color: var(--kick-green);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+body.obs-mode #info-corner-container {
+  display: none !important;
+}
