@@ -547,8 +547,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const watchTimeHrs = getUserWatchTimeHours(winner.username);
+            const userMetaObj = userMeta[winner.username.toLowerCase()] || {};
+            const picUrl = winner.profile_pic || userMetaObj.profilePic;
+            const winnerColor = winner.color || '#53FC18';
+            const initial = (winner.username || 'W').charAt(0).toUpperCase();
+
+            let avatarContentHtml = '';
+            if (picUrl) {
+                avatarContentHtml = `
+                    <img src="${picUrl}" class="winner-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" alt="${winner.username}">
+                    <div class="winner-avatar-initial" style="background-color: ${winnerColor}; display: none;">${initial}</div>
+                `;
+            } else {
+                avatarContentHtml = `
+                    <div class="winner-avatar-initial" style="background-color: ${winnerColor};">${initial}</div>
+                `;
+            }
 
             card.innerHTML = `
+                <div class="winner-avatar-circle" style="border-color: ${winnerColor};">
+                    ${avatarContentHtml}
+                </div>
                 <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: var(--kick-green); margin-bottom: 0.3rem;">${winner.username}</div>
                 <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name}</div>
                 
@@ -575,6 +594,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (channelSlug) {
                 kickHandler.getUserFollowInfo(channelSlug, winner.username).then(info => {
+                    if (info) {
+                        const fetchedPic = info.profile_pic || info.profilepic || info.profile_picture || (info.user && (info.user.profile_pic || info.user.profilepic || info.user.profile_picture));
+                        if (fetchedPic) {
+                            userMetaObj.profilePic = fetchedPic;
+                            const avatarCircle = card.querySelector('.winner-avatar-circle');
+                            if (avatarCircle && !avatarCircle.querySelector('img')) {
+                                avatarCircle.innerHTML = `
+                                    <img src="${fetchedPic}" class="winner-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" alt="${winner.username}">
+                                    <div class="winner-avatar-initial" style="background-color: ${winnerColor}; display: none;">${initial}</div>
+                                `;
+                            }
+                        }
+                    }
                     if (!followStatusEl) return;
                     if (info && (info.following_since || info.followed_at || info.created_at)) {
                         const dateStr = info.following_since || info.followed_at || info.created_at;
@@ -870,6 +902,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const u = msg.sender.username;
             recordUserActivity(u);
 
+            const avatarUrl = msg.sender.profile_pic || msg.sender.profilepic || msg.sender.profile_picture || msg.sender.avatar || (msg.sender.identity && msg.sender.identity.profile_pic) || null;
+
             chatLogs.push({
                 username: u,
                 channel: activeChan,
@@ -879,6 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const meta = userMeta[u.toLowerCase()] || {};
             if (msg.sender.created_at) meta.createdAt = msg.sender.created_at;
+            if (avatarUrl) meta.profilePic = avatarUrl;
             if (msg.sender.identity && msg.sender.identity.badges) meta.badges = msg.sender.identity.badges;
             userMeta[u.toLowerCase()] = meta;
 
@@ -932,10 +967,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                 }
+                const avatar = msg.sender.profile_pic || msg.sender.profilepic || msg.sender.profile_picture || msg.sender.avatar || null;
                 addToQueue({
                     username: msg.sender.username,
                     slot_name: msg.sender.username,
-                    color: getNextColor()
+                    color: getNextColor(),
+                    profile_pic: avatar
                 });
             }
         } else {
@@ -944,10 +981,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parts.length < 2) return;
                 const slotName = parts.slice(1).join(' ');
 
+                const avatar = msg.sender.profile_pic || msg.sender.profilepic || msg.sender.profile_picture || msg.sender.avatar || null;
                 addToQueue({
                     username: msg.sender.username,
                     slot_name: slotName,
-                    color: getNextColor()
+                    color: getNextColor(),
+                    profile_pic: avatar
                 });
             }
         }
