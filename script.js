@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const acceptEntriesToggle = document.getElementById('accept-entries-toggle');
     const entriesLabel = document.getElementById('entries-label');
     const entriesReminderPopup = document.getElementById('entries-reminder-popup');
+    const minWatchtimeInput = document.getElementById('min-watchtime-input');
 
     // Modal Elements
     const winnerModal = document.getElementById('winner-modal');
@@ -61,12 +62,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const history = []; // Array of { username, slot_name }
     const chatLogs = []; // Array of { username, content, timestamp }
     const userMeta = {}; // Object mapping username -> { createdAt, badges }
+    const userWatchTime = {}; // Object mapping username -> { minutes, lastActive, firstSeen }
     let isConnected = false;
     let isGiveawayMode = false;
     let connectedUsername = '';
     let giveawayKeyword = '!giveaway';
     let hideGiveawayKeyword = false;
     let acceptEntries = true;
+    let minWatchTimeHours = 0;
+
+    // --- Watch Time Tracking Helpers ---
+    function recordUserActivity(username) {
+        if (!username) return;
+        const key = username.toLowerCase();
+        const now = Date.now();
+        if (!userWatchTime[key]) {
+            userWatchTime[key] = { minutes: 1, lastActive: now, firstSeen: now };
+        } else {
+            const record = userWatchTime[key];
+            const elapsedMins = (now - record.lastActive) / (1000 * 60);
+            if (elapsedMins > 0) {
+                record.minutes += Math.min(elapsedMins, 15);
+            }
+            record.lastActive = now;
+        }
+        try {
+            localStorage.setItem('kick_wheel_watch_time', JSON.stringify(userWatchTime));
+        } catch (e) {}
+    }
+
+    function getUserWatchTimeHours(username) {
+        if (!username) return 0;
+        const record = userWatchTime[username.toLowerCase()];
+        if (!record) return 0;
+        return record.minutes / 60;
+    }
 
     // --- Time Format Helpers ---
     function formatTimeAgo(timestamp) {
@@ -237,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. Load Chat Logs & User Meta
+    // 3. Load Chat Logs, User Meta & Watch Time
     const savedChatLogs = localStorage.getItem('kick_wheel_chat_logs');
     if (savedChatLogs) {
         try {
@@ -261,6 +291,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const savedWatchTime = localStorage.getItem('kick_wheel_watch_time');
+    if (savedWatchTime) {
+        try {
+            const parsed = JSON.parse(savedWatchTime);
+            Object.assign(userWatchTime, parsed);
+        } catch (e) {
+            console.error('Failed to parse saved watch time', e);
+        }
+    }
+
     // 4. Load Mode, Giveaway & Entry Settings
     const savedMode = localStorage.getItem('kick_wheel_mode');
     isGiveawayMode = savedMode === 'giveaway';
@@ -281,6 +321,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedAcceptEntries !== null) {
         acceptEntries = savedAcceptEntries === 'true';
         if (acceptEntriesToggle) acceptEntriesToggle.checked = acceptEntries;
+    }
+
+    const savedMinWatch = localStorage.getItem('kick_wheel_min_watchtime');
+    if (savedMinWatch) {
+        minWatchTimeHours = parseFloat(savedMinWatch) || 0;
+        if (minWatchtimeInput) minWatchtimeInput.value = minWatchTimeHours;
     }
 
     updateEntriesUI();
@@ -497,11 +543,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 `).join('');
             }
 
+            const watchTimeHrs = getUserWatchTimeHours(winner.username);
+
             card.innerHTML = `
                 <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: var(--kick-green); margin-bottom: 0.3rem;">${winner.username}</div>
                 <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name}</div>
                 
                 <div class="winner-details-box" style="margin-top: 1.2rem; text-align: left; background: rgba(0,0,0,0.5); padding: 0.9rem; border-radius: 10px; border: var(--glass-border);">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #00F0FF; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 6px;">
+                        <span>⏱️</span> <span>Watch Time: ${watchTimeHrs.toFixed(1)} hrs</span>
+                    </div>
                     <div style="font-size: 0.85rem; font-weight: 700; color: var(--kick-green); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px;">
                         <span>📅</span> <span class="follow-status-text">Checking follower info...</span>
                     </div>
@@ -763,6 +814,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Min Watch Time Input
+        if (minWatchtimeInput) {
+            minWatchtimeInput.addEventListener('input', () => {
+                minWatchTimeHours = parseFloat(minWatchtimeInput.value) || 0;
+                localStorage.setItem('kick_wheel_min_watchtime', minWatchTimeHours.toString());
+            });
+        }
+
         // Wheel Count Selector
         if (wheelCountSelect) {
             wheelCountSelect.addEventListener('change', () => {
@@ -801,9 +860,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = msg.content.trim();
         const lowerContent = content.toLowerCase();
 
-        // Track user messages and metadata
+        // Track user messages, metadata & watch time activity
         if (msg.sender && msg.sender.username) {
             const u = msg.sender.username;
+            recordUserActivity(u);
+
             chatLogs.push({
                 username: u,
                 content: content,
@@ -857,6 +918,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isGiveawayMode) {
             const kw = (giveawayKeyword || '!giveaway').toLowerCase();
             if (lowerContent.startsWith(kw)) {
+                // Min Watch Time Verification
+                if (minWatchTimeHours > 0) {
+                    const userHours = getUserWatchTimeHours(msg.sender.username);
+                    if (userHours < minWatchTimeHours) {
+                        console.log(`User ${msg.sender.username} declined. Watch time: ${userHours.toFixed(1)}h / Req: ${minWatchTimeHours}h`);
+                        return;
+                    }
+                }
                 addToQueue({
                     username: msg.sender.username,
                     slot_name: msg.sender.username,
@@ -947,6 +1016,11 @@ document.addEventListener('DOMContentLoaded', () => {
             hideGiveawayKeyword = e.newValue === 'true';
             if (hideKeywordToggle) hideKeywordToggle.checked = hideGiveawayKeyword;
             updateInstructionBanner();
+        }
+
+        if (e.key === 'kick_wheel_min_watchtime' && e.newValue) {
+            minWatchTimeHours = parseFloat(e.newValue) || 0;
+            if (minWatchtimeInput) minWatchtimeInput.value = minWatchTimeHours;
         }
 
         if (e.key === 'kick_wheel_count' && e.newValue) {
