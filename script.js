@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const entriesReminderPopup = document.getElementById('entries-reminder-popup');
     const minWatchtimeInput = document.getElementById('min-watchtime-input');
     const soundToggle = document.getElementById('sound-toggle');
+    const simpleGraphicsToggle = document.getElementById('simple-graphics-toggle');
     const goldSpinToggle = document.getElementById('gold-spin-toggle');
     const subWeightSelect = document.getElementById('sub-weight-select');
     const hubLogoInput = document.getElementById('hub-logo-input');
@@ -45,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let hubLogoUrl = '';
     let subMultiplier = 2;
     let isGoldSpinEnabled = false;
+    let isSimpleGraphics = false;
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -353,6 +355,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const soundOn = savedSound === 'true';
         if (soundToggle) soundToggle.checked = soundOn;
         if (typeof soundManager !== 'undefined') soundManager.enabled = soundOn;
+    }
+
+    const savedGraphics = localStorage.getItem('kick_wheel_simple_graphics');
+    if (savedGraphics !== null) {
+        isSimpleGraphics = savedGraphics === 'true';
+        if (simpleGraphicsToggle) simpleGraphicsToggle.checked = isSimpleGraphics;
+        if (isSimpleGraphics) document.body.classList.add('simple-graphics-mode');
     }
 
     const savedGoldSpin = localStorage.getItem('kick_wheel_gold_spin_enabled');
@@ -1015,6 +1024,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Simple Graphics Mode Toggle
+        if (simpleGraphicsToggle) {
+            simpleGraphicsToggle.addEventListener('change', () => {
+                isSimpleGraphics = simpleGraphicsToggle.checked;
+                document.body.classList.toggle('simple-graphics-mode', isSimpleGraphics);
+                localStorage.setItem('kick_wheel_simple_graphics', isSimpleGraphics ? 'true' : 'false');
+            });
+        }
+
         // Gold Spin Toggle & First-Time Confirmation Modal
         const goldSpinModal = document.getElementById('gold-spin-modal');
         const confirmGoldSpinBtn = document.getElementById('confirm-gold-spin-btn');
@@ -1386,6 +1404,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const soundOn = e.newValue === 'true';
             if (soundToggle) soundToggle.checked = soundOn;
             if (typeof soundManager !== 'undefined') soundManager.enabled = soundOn;
+        }
+
+        if (e.key === 'kick_wheel_simple_graphics' && e.newValue) {
+            isSimpleGraphics = e.newValue === 'true';
+            if (simpleGraphicsToggle) simpleGraphicsToggle.checked = isSimpleGraphics;
+            document.body.classList.toggle('simple-graphics-mode', isSimpleGraphics);
         }
 
         if (e.key === 'kick_wheel_gold_spin_enabled' && e.newValue) {

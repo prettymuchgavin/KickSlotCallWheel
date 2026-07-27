@@ -972,3 +972,46 @@ body.obs-mode #info-corner-container {
   max-width: 440px;
   width: 90%;
 }
+
+/* Simple Graphics Mode (Low-End PC Performance Optimization) */
+body.simple-graphics-mode {
+  background: #0b0e11 !important;
+}
+
+body.simple-graphics-mode * {
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  animation: none !important;
+  filter: none !important;
+  transition: none !important;
+}
+
+body.simple-graphics-mode #sidebar {
+  background: #14171a !important;
+  border-right: 1px solid #25282e !important;
+}
+
+body.simple-graphics-mode .wheel-container {
+  border: 2px solid #25282e !important;
+}
+
+body.simple-graphics-mode .wheel-container.gold-mode {
+  border: 3px solid #FFD700 !important;
+}
+
+body.simple-graphics-mode #spin-btn {
+  background: #53FC18 !important;
+  color: #000 !important;
+}
+
+body.simple-graphics-mode .modal-card,
+body.simple-graphics-mode .winner-card-item {
+  background: #14171a !important;
+  border: 1px solid #25282e !important;
+}
+
+body.simple-graphics-mode .instruction-banner {
+  background: #14171a !important;
+  border: 1px solid #25282e !important;
+}
