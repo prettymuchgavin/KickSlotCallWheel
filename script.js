@@ -615,7 +615,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         const underdogWinIdx = Math.floor(Math.random() * goldSegments.length);
                         w.spin((underdogWinner) => {
-                            const goldWinner = { ...underdogWinner, isGoldWinner: true };
+                            const totalUnderdogWeight = goldSegments.reduce((sum, s) => sum + (s.weight || 1), 0);
+                            const userWeight = underdogWinner.weight || 1;
+                            const oddsPercent = ((userWeight / totalUnderdogWeight) * 100).toFixed(1);
+
+                            const goldWinner = {
+                                ...underdogWinner,
+                                isGoldWinner: true,
+                                winOddsPercent: oddsPercent,
+                                userWeight: userWeight,
+                                totalWheelWeight: totalUnderdogWeight,
+                                totalContestants: underdogs.length,
+                                winMethod: '🌟 Gold Spin Underdog Re-Spin'
+                            };
                             winners[i] = goldWinner;
 
                             if (w.canvas.parentElement) {
@@ -640,7 +652,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 } else {
                     // Regular Winner
-                    winners[i] = initialWinner;
+                    const totalWheelWeight = activeSegs.reduce((sum, s) => sum + (s.weight || 1), 0);
+                    const userWeight = initialWinner.weight || 1;
+                    const oddsPercent = ((userWeight / totalWheelWeight) * 100).toFixed(1);
+
+                    winners[i] = {
+                        ...initialWinner,
+                        winOddsPercent: oddsPercent,
+                        userWeight: userWeight,
+                        totalWheelWeight: totalWheelWeight,
+                        totalContestants: queue.length,
+                        winMethod: 'Standard Wheel Spin'
+                    };
+
                     finishedCount++;
                     if (finishedCount === wheels.length) {
                         finalizeMultiSpin();
@@ -733,6 +757,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name}</div>
                 
                 <div class="winner-details-box" style="margin-top: 1.2rem; text-align: left; background: rgba(0,0,0,0.5); padding: 0.9rem; border-radius: 10px; border: var(--glass-border);">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #FFBE0B; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px;">
+                        <span>🎯</span> <span>Win Odds: ${winner.winOddsPercent || '100.0'}% (${winner.userWeight || 1} / ${winner.totalWheelWeight || 1} tickets)</span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.6rem; padding-left: 22px;">
+                        <span>Method: ${winner.winMethod || 'Standard Spin'} (${winner.totalContestants || 1} contestants)</span>
+                    </div>
                     <div style="font-size: 0.85rem; font-weight: 700; color: #00F0FF; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 6px;">
                         <span>⏱️</span> <span>Watch Time: ${watchTimeHrs.toFixed(1)} hrs</span>
                     </div>
