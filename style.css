@@ -1043,3 +1043,25 @@ body.simple-graphics-mode .instruction-banner {
   background: var(--kick-green);
   border-radius: 3px;
 }
+
+/* Version Update Notification Banner */
+.update-banner {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(135deg, #00F0FF, #3A86FF);
+  color: #fff;
+  padding: 0.8rem 1.2rem;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  z-index: 9999;
+  animation: slideIn 0.3s ease-out;
+}
+
+body.obs-mode #update-notification-banner {
+  display: none !important;
+}

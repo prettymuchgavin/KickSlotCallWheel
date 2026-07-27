@@ -1234,6 +1234,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+
+        // Version Checker Logic
+        const CURRENT_VERSION = '1.1.0';
+        const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
+
+        async function checkForUpdates() {
+            if (isOBS) return;
+            try {
+                const response = await fetch(`${GITHUB_VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) return;
+                const remoteVersion = (await response.text()).trim();
+
+                if (remoteVersion && remoteVersion !== CURRENT_VERSION) {
+                    console.log(`Update detected! Local: ${CURRENT_VERSION}, Remote: ${remoteVersion}`);
+                    const banner = document.getElementById('update-notification-banner');
+                    const tag = document.getElementById('latest-version-tag');
+                    if (tag) tag.innerText = `v${remoteVersion}`;
+                    if (banner) banner.style.display = 'flex';
+                }
+            } catch (err) {
+                console.warn('Could not check remote version from GitHub:', err);
+            }
+        }
+
+        checkForUpdates();
+        setInterval(checkForUpdates, 15 * 60 * 1000);
+
+        const hardRefreshBtn = document.getElementById('hard-refresh-btn');
+        const dismissUpdateBtn = document.getElementById('dismiss-update-btn');
+
+        if (hardRefreshBtn) {
+            hardRefreshBtn.addEventListener('click', () => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('t', Date.now().toString());
+                window.location.href = url.toString();
+            });
+        }
+
+        if (dismissUpdateBtn) {
+            dismissUpdateBtn.addEventListener('click', () => {
+                const banner = document.getElementById('update-notification-banner');
+                if (banner) banner.style.display = 'none';
+            });
+        }
     }
 
     // Unified Message Handler (Both Dashboard and OBS Overlay)
