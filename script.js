@@ -991,11 +991,44 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Gold Spin Toggle
+        // Gold Spin Toggle & First-Time Confirmation Modal
+        const goldSpinModal = document.getElementById('gold-spin-modal');
+        const confirmGoldSpinBtn = document.getElementById('confirm-gold-spin-btn');
+        const cancelGoldSpinBtn = document.getElementById('cancel-gold-spin-btn');
+
         if (goldSpinToggle) {
             goldSpinToggle.addEventListener('change', () => {
+                if (goldSpinToggle.checked) {
+                    const hasConfirmed = localStorage.getItem('kick_wheel_gold_spin_confirmed') === 'true';
+                    if (!hasConfirmed) {
+                        goldSpinToggle.checked = false;
+                        if (goldSpinModal) goldSpinModal.style.display = 'flex';
+                        return;
+                    }
+                }
                 isGoldSpinEnabled = goldSpinToggle.checked;
                 localStorage.setItem('kick_wheel_gold_spin_enabled', isGoldSpinEnabled ? 'true' : 'false');
+                refreshAllWheelSegments();
+            });
+        }
+
+        if (confirmGoldSpinBtn) {
+            confirmGoldSpinBtn.addEventListener('click', () => {
+                localStorage.setItem('kick_wheel_gold_spin_confirmed', 'true');
+                if (goldSpinModal) goldSpinModal.style.display = 'none';
+                if (goldSpinToggle) goldSpinToggle.checked = true;
+                isGoldSpinEnabled = true;
+                localStorage.setItem('kick_wheel_gold_spin_enabled', 'true');
+                refreshAllWheelSegments();
+            });
+        }
+
+        if (cancelGoldSpinBtn) {
+            cancelGoldSpinBtn.addEventListener('click', () => {
+                if (goldSpinModal) goldSpinModal.style.display = 'none';
+                if (goldSpinToggle) goldSpinToggle.checked = false;
+                isGoldSpinEnabled = false;
+                localStorage.setItem('kick_wheel_gold_spin_enabled', 'false');
                 refreshAllWheelSegments();
             });
         }

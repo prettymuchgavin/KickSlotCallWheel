@@ -948,3 +948,30 @@ body.obs-mode #info-corner-container {
   letter-spacing: 1px;
   box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
 }
+
+/* Generic Modal Overlay & Card */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 120;
+  animation: slideIn 0.25s ease-out;
+}
+
+.modal-card {
+  background: var(--bg-dark);
+  border: 2px solid #FFD700;
+  padding: 2.2rem;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
+  max-width: 440px;
+  width: 90%;
+}
