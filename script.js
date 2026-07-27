@@ -277,17 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshAllWheelSegments();
 
         if (spinBtn) {
-            if (wheelCount === 1 && firstContainer) {
-                firstContainer.appendChild(spinBtn);
-                spinBtn.classList.add('single-wheel-spin');
-                spinBtn.innerText = 'SPIN';
-            } else {
-                if (wheelsWrapper && wheelsWrapper.parentNode) {
-                    wheelsWrapper.parentNode.insertBefore(spinBtn, wheelsWrapper.nextSibling);
-                }
-                spinBtn.classList.remove('single-wheel-spin');
-                spinBtn.innerText = `SPIN ALL (${wheelCount})`;
+            if (wheelsWrapper && wheelsWrapper.parentNode) {
+                wheelsWrapper.parentNode.insertBefore(spinBtn, wheelsWrapper.nextSibling);
             }
+            spinBtn.classList.remove('single-wheel-spin');
+            spinBtn.innerText = wheelCount === 1 ? 'SPIN' : `SPIN ALL (${wheelCount})`;
         }
     }
 
