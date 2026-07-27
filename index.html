@@ -71,6 +71,35 @@
                     </div>
                 </div>
 
+                <div class="sound-toggle-container"
+                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 0.9rem; font-weight: 600;">Sound Effects</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sound-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="weight-setting-container"
+                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Sub / VIP Entry Multiplier</span>
+                    <select id="sub-weight-select" style="padding: 4px 8px; border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; border: var(--glass-border); font-weight: 600; cursor: pointer; outline: none; font-size: 0.8rem;">
+                        <option value="1">1x (Normal)</option>
+                        <option value="2">2x Weight</option>
+                        <option value="3">3x Weight</option>
+                        <option value="5">5x Weight</option>
+                    </select>
+                </div>
+
+                <div class="hub-logo-container" style="margin-top: 15px; border-top: var(--glass-border); padding-top: 12px;">
+                    <label for="hub-logo-input" style="font-size: 0.8rem; margin-bottom: 4px; display: block; font-weight: 600;">Center Wheel Logo URL</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="hub-logo-input" placeholder="e.g. https://.../logo.png" style="flex: 1; padding: 0.4rem 0.7rem; font-size: 0.8rem;">
+                        <button id="upload-logo-btn" type="button" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(83,252,24,0.15); color: var(--kick-green); border: 1px solid rgba(83,252,24,0.4); border-radius: 6px; cursor: pointer; font-weight: 600;">Upload</button>
+                        <input type="file" id="hub-logo-file" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+
                 <div class="wheel-count-container"
                     style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
                     <span style="font-size: 0.9rem; font-weight: 600;">Number of Wheels</span>
@@ -159,6 +188,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="sound.js"></script>
     <script src="wheel.js"></script>
     <script src="kick.js"></script>
     <script src="script.js"></script>

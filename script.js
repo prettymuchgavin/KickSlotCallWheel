@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const entriesLabel = document.getElementById('entries-label');
     const entriesReminderPopup = document.getElementById('entries-reminder-popup');
     const minWatchtimeInput = document.getElementById('min-watchtime-input');
+    const soundToggle = document.getElementById('sound-toggle');
+    const subWeightSelect = document.getElementById('sub-weight-select');
+    const hubLogoInput = document.getElementById('hub-logo-input');
+    const uploadLogoBtn = document.getElementById('upload-logo-btn');
+    const hubLogoFile = document.getElementById('hub-logo-file');
 
     // Modal Elements
     const winnerModal = document.getElementById('winner-modal');
@@ -36,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let wheelCount = 1;
     const wheels = [];
     let entriesClosedTimer = null;
+    let hubLogoUrl = '';
+    let subMultiplier = 2;
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -58,10 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // State
-    const queue = []; // Array of { username, slot_name, color }
+    const queue = []; // Array of { username, slot_name, color, weight, profile_pic }
     const history = []; // Array of { username, slot_name }
     const chatLogs = []; // Array of { username, content, timestamp }
-    const userMeta = {}; // Object mapping username -> { createdAt, badges }
+    const userMeta = {}; // Object mapping username -> { createdAt, badges, profilePic }
     const userWatchTime = {}; // Object mapping username -> { minutes, lastActive, firstSeen }
     let isConnected = false;
     let isGiveawayMode = false;
@@ -70,6 +77,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let hideGiveawayKeyword = false;
     let acceptEntries = true;
     let minWatchTimeHours = 0;
+
+    // --- Center Hub Logo Helper ---
+    function updateCenterHubsLogo(url) {
+        hubLogoUrl = url || '';
+        document.querySelectorAll('.wheel-center-hub').forEach(hub => {
+            if (url) {
+                hub.innerHTML = `<img src="${url}" alt="Logo" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else {
+                hub.innerHTML = '';
+            }
+        });
+        wheels.forEach(w => w.setHubLogo(url));
+    }
 
     // --- Watch Time Tracking Helpers ---
     function recordUserActivity(username) {
@@ -211,6 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const centerHub = document.createElement('div');
             centerHub.className = 'wheel-center-hub';
+            if (hubLogoUrl) {
+                centerHub.innerHTML = `<img src="${hubLogoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: cover;">`;
+            }
 
             container.appendChild(pointer);
             container.appendChild(canvas);
@@ -220,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (i === 0) firstContainer = container;
 
             const wheelInstance = new Wheel(canvas);
+            if (hubLogoUrl) wheelInstance.setHubLogo(hubLogoUrl);
             wheelInstance.updateSegments(queue);
             wheels.push(wheelInstance);
         }
@@ -301,7 +325,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. Load Mode, Giveaway & Entry Settings
+    // 4. Load Sound, Multiplier & Hub Logo Settings
+    const savedSound = localStorage.getItem('kick_wheel_sound_enabled');
+    if (savedSound !== null) {
+        const soundOn = savedSound === 'true';
+        if (soundToggle) soundToggle.checked = soundOn;
+        if (typeof soundManager !== 'undefined') soundManager.enabled = soundOn;
+    }
+
+    const savedSubMult = localStorage.getItem('kick_wheel_sub_multiplier');
+    if (savedSubMult) {
+        subMultiplier = parseInt(savedSubMult, 10) || 2;
+        if (subWeightSelect) subWeightSelect.value = subMultiplier.toString();
+    }
+
+    const savedLogo = localStorage.getItem('kick_wheel_hub_logo');
+    if (savedLogo) {
+        hubLogoUrl = savedLogo;
+        if (hubLogoInput) hubLogoInput.value = hubLogoUrl;
+    }
+
+    // 5. Load Mode, Giveaway & Entry Settings
     const savedMode = localStorage.getItem('kick_wheel_mode');
     isGiveawayMode = savedMode === 'giveaway';
     if (modeToggle) modeToggle.checked = isGiveawayMode;
@@ -332,18 +376,19 @@ document.addEventListener('DOMContentLoaded', () => {
     updateEntriesUI();
     updateInstructionBanner();
 
-    // 5. Load Wheel Count
+    // 6. Load Wheel Count
     const urlParams = new URLSearchParams(window.location.search);
     const queryWheelCount = urlParams.get('wheels') || urlParams.get('count');
     const savedWheelCount = queryWheelCount || localStorage.getItem('kick_wheel_count') || '1';
     if (wheelCountSelect) wheelCountSelect.value = savedWheelCount;
     setupWheels(savedWheelCount);
+    updateCenterHubsLogo(hubLogoUrl);
 
-    // 6. Update UI with Loaded Data
+    // 7. Update UI with Loaded Data
     updateQueueUI();
     updateHistoryUI();
 
-    // 7. OBS URL Parameters Check (Highest priority for OBS connection)
+    // 8. OBS URL Parameters Check (Highest priority for OBS connection)
     const queryUsername = urlParams.get('username') || urlParams.get('user');
     const queryChannelId = urlParams.get('channel_id') || urlParams.get('channelId') || urlParams.get('id');
 
@@ -417,9 +462,12 @@ document.addEventListener('DOMContentLoaded', () => {
         queue.forEach((user, index) => {
             const item = document.createElement('div');
             item.className = 'queue-item';
+            const weightBadge = (user.weight && user.weight > 1) 
+                ? `<span style="background: rgba(83,252,24,0.2); color: var(--kick-green); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 6px;">${user.weight}x</span>` 
+                : '';
             item.innerHTML = `
                 <div class="q-info">
-                    <span class="q-name">${user.username}</span>
+                    <span class="q-name">${user.username}${weightBadge}</span>
                     <span class="q-slot">${user.slot_name}</span>
                 </div>
                 <button class="q-delete-btn" title="Remove from queue">✕</button>
@@ -805,6 +853,48 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Sound Effects Toggle
+        if (soundToggle) {
+            soundToggle.addEventListener('change', () => {
+                const enabled = soundToggle.checked;
+                if (typeof soundManager !== 'undefined') soundManager.enabled = enabled;
+                localStorage.setItem('kick_wheel_sound_enabled', enabled ? 'true' : 'false');
+            });
+        }
+
+        // Sub / VIP Multiplier Select
+        if (subWeightSelect) {
+            subWeightSelect.addEventListener('change', () => {
+                subMultiplier = parseInt(subWeightSelect.value, 10) || 2;
+                localStorage.setItem('kick_wheel_sub_multiplier', subMultiplier.toString());
+            });
+        }
+
+        // Custom Center Hub Logo Input & File Upload
+        if (hubLogoInput) {
+            hubLogoInput.addEventListener('input', () => {
+                const url = hubLogoInput.value.trim();
+                updateCenterHubsLogo(url);
+                localStorage.setItem('kick_wheel_hub_logo', url);
+            });
+        }
+
+        if (uploadLogoBtn && hubLogoFile) {
+            uploadLogoBtn.addEventListener('click', () => hubLogoFile.click());
+            hubLogoFile.addEventListener('change', () => {
+                const file = hubLogoFile.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataUrl = e.target.result;
+                    if (hubLogoInput) hubLogoInput.value = dataUrl;
+                    updateCenterHubsLogo(dataUrl);
+                    localStorage.setItem('kick_wheel_hub_logo', dataUrl);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         // Mode Toggle Logic
         if (modeToggle) {
             modeToggle.addEventListener('change', () => {
@@ -976,6 +1066,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Detect Subscriber / VIP / Mod weight multiplier
+        let entryWeight = 1;
+        if (msg.sender) {
+            const badges = (msg.sender.identity && msg.sender.identity.badges) || msg.sender.badges || [];
+            const isSubOrVip = badges.some(b => {
+                const typeStr = (b.type || b.badge_id || b.name || '').toLowerCase();
+                return typeStr.includes('sub') || typeStr.includes('vip') || typeStr.includes('subscriber') || typeStr.includes('mod') || typeStr.includes('broadcaster');
+            });
+            if (isSubOrVip) {
+                entryWeight = subMultiplier;
+            }
+        }
+
         if (isGiveawayMode) {
             const kw = (giveawayKeyword || '!giveaway').toLowerCase();
             if (lowerContent.startsWith(kw)) {
@@ -992,7 +1095,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     username: msg.sender.username,
                     slot_name: msg.sender.username,
                     color: getNextColor(),
-                    profile_pic: avatar
+                    profile_pic: avatar,
+                    weight: entryWeight
                 });
             }
         } else {
@@ -1006,7 +1110,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     username: msg.sender.username,
                     slot_name: slotName,
                     color: getNextColor(),
-                    profile_pic: avatar
+                    profile_pic: avatar,
+                    weight: entryWeight
                 });
             }
         }
@@ -1057,6 +1162,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        if (e.key === 'kick_wheel_sound_enabled' && e.newValue) {
+            const soundOn = e.newValue === 'true';
+            if (soundToggle) soundToggle.checked = soundOn;
+            if (typeof soundManager !== 'undefined') soundManager.enabled = soundOn;
+        }
+
+        if (e.key === 'kick_wheel_sub_multiplier' && e.newValue) {
+            subMultiplier = parseInt(e.newValue, 10) || 2;
+            if (subWeightSelect) subWeightSelect.value = subMultiplier.toString();
+        }
+
+        if (e.key === 'kick_wheel_hub_logo' && e.newValue) {
+            updateCenterHubsLogo(e.newValue);
+            if (hubLogoInput) hubLogoInput.value = e.newValue;
+        }
+
         if (e.key === 'kick_wheel_mode' && e.newValue) {
             isGiveawayMode = e.newValue === 'giveaway';
             if (modeToggle) modeToggle.checked = isGiveawayMode;
@@ -1092,6 +1213,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const count = e.newValue;
             if (wheelCountSelect) wheelCountSelect.value = count;
             setupWheels(count);
+            updateCenterHubsLogo(hubLogoUrl);
         }
 
         // Handle spin trigger sync for OBS view
