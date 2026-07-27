@@ -526,9 +526,12 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.minWidth = '260px';
             card.style.maxWidth = '340px';
 
+            const activeChannel = (connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
             const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
             const userMsgs = chatLogs.filter(m => 
-                m.username.toLowerCase() === winner.username.toLowerCase() && m.timestamp >= twoDaysAgo
+                m.username.toLowerCase() === winner.username.toLowerCase() && 
+                m.timestamp >= twoDaysAgo &&
+                (!m.channel || !activeChannel || m.channel.toLowerCase() === activeChannel)
             );
 
             let userMessagesHtml = '';
@@ -860,6 +863,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = msg.content.trim();
         const lowerContent = content.toLowerCase();
 
+        const activeChan = (connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
+
         // Track user messages, metadata & watch time activity
         if (msg.sender && msg.sender.username) {
             const u = msg.sender.username;
@@ -867,6 +872,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chatLogs.push({
                 username: u,
+                channel: activeChan,
                 content: content,
                 timestamp: Date.now()
             });
