@@ -1015,3 +1015,31 @@ body.simple-graphics-mode .instruction-banner {
   background: #14171a !important;
   border: 1px solid #25282e !important;
 }
+
+/* Scrollable Winner Chat History Box */
+.winner-chat-history {
+  max-height: 110px;
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.winner-chat-history::-webkit-scrollbar {
+  width: 5px;
+}
+
+.winner-chat-history::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.winner-chat-history::-webkit-scrollbar-thumb {
+  background: var(--kick-green);
+  border-radius: 3px;
+}

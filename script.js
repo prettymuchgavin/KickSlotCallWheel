@@ -727,8 +727,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (userMsgs.length === 0) {
                 userMessagesHtml = '<div style="color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No recent chat messages logged</div>';
             } else {
-                userMessagesHtml = userMsgs.slice(-5).reverse().map(m => `
-                    <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; padding: 2px 0;">
+                userMessagesHtml = userMsgs.slice().reverse().map(m => `
+                    <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
                         <span style="color: #eee; word-break: break-word; text-align: left;">"${m.content}"</span>
                         <span style="color: var(--text-secondary); white-space: nowrap; font-size: 0.75rem;">${formatTimeAgo(m.timestamp)}</span>
                     </div>
