@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const entriesReminderPopup = document.getElementById('entries-reminder-popup');
     const minWatchtimeInput = document.getElementById('min-watchtime-input');
     const soundToggle = document.getElementById('sound-toggle');
+    const goldSpinToggle = document.getElementById('gold-spin-toggle');
     const subWeightSelect = document.getElementById('sub-weight-select');
     const hubLogoInput = document.getElementById('hub-logo-input');
     const uploadLogoBtn = document.getElementById('upload-logo-btn');
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let entriesClosedTimer = null;
     let hubLogoUrl = '';
     let subMultiplier = 2;
+    let isGoldSpinEnabled = false;
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -77,6 +79,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let hideGiveawayKeyword = false;
     let acceptEntries = true;
     let minWatchTimeHours = 0;
+
+    // --- Active Segment Generator ---
+    function getWheelActiveSegments() {
+        if (queue.length === 0) return [];
+        const segs = [...queue];
+        if (isGoldSpinEnabled) {
+            segs.push({
+                isGoldSpin: true,
+                username: '🌟 GOLD SPIN',
+                slot_name: 'RE-SPIN FOR UNDERDOGS',
+                color: '#FFD700',
+                weight: 1
+            });
+        }
+        return segs;
+    }
+
+    function refreshAllWheelSegments() {
+        const activeSegs = getWheelActiveSegments();
+        wheels.forEach(w => {
+            if (!w.isSpinning) {
+                w.updateSegments(activeSegs);
+            }
+        });
+    }
 
     // --- Center Hub Logo Helper ---
     function updateCenterHubsLogo(url) {
@@ -244,9 +271,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const wheelInstance = new Wheel(canvas);
             if (hubLogoUrl) wheelInstance.setHubLogo(hubLogoUrl);
-            wheelInstance.updateSegments(queue);
             wheels.push(wheelInstance);
         }
+
+        refreshAllWheelSegments();
 
         if (spinBtn) {
             if (wheelCount === 1 && firstContainer) {
@@ -325,12 +353,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. Load Sound, Multiplier & Hub Logo Settings
+    // 4. Load Sound, Gold Spin, Multiplier & Hub Logo Settings
     const savedSound = localStorage.getItem('kick_wheel_sound_enabled');
     if (savedSound !== null) {
         const soundOn = savedSound === 'true';
         if (soundToggle) soundToggle.checked = soundOn;
         if (typeof soundManager !== 'undefined') soundManager.enabled = soundOn;
+    }
+
+    const savedGoldSpin = localStorage.getItem('kick_wheel_gold_spin_enabled');
+    if (savedGoldSpin !== null) {
+        isGoldSpinEnabled = savedGoldSpin === 'true';
+        if (goldSpinToggle) goldSpinToggle.checked = isGoldSpinEnabled;
     }
 
     const savedSubMult = localStorage.getItem('kick_wheel_sub_multiplier');
@@ -440,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Defer updating segment colors/sizes if any wheel is spinning
         if (!wheels.some(w => w.isSpinning)) {
-            wheels.forEach(w => w.updateSegments(queue));
+            refreshAllWheelSegments();
         }
     }
 
@@ -449,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         queue.splice(index, 1);
         updateQueueUI();
         localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-        wheels.forEach(w => w.updateSegments(queue));
+        refreshAllWheelSegments();
     }
 
     function updateQueueUI() {
@@ -495,6 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEntriesUI();
         updateInstructionBanner();
 
+        const activeSegs = getWheelActiveSegments();
         const winnerIndices = [];
         const winners = [];
         const usedUsernames = new Set();
@@ -507,38 +542,115 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (usedUsernames.size < queue.length) {
                     do {
-                        winnerIdx = Math.floor(Math.random() * queue.length);
-                    } while (usedUsernames.has(queue[winnerIdx].username.toLowerCase()));
+                        winnerIdx = Math.floor(Math.random() * activeSegs.length);
+                    } while (
+                        activeSegs[winnerIdx] && 
+                        !activeSegs[winnerIdx].isGoldSpin && 
+                        usedUsernames.has(activeSegs[winnerIdx].username.toLowerCase())
+                    );
                 } else {
-                    winnerIdx = Math.floor(Math.random() * queue.length);
+                    winnerIdx = Math.floor(Math.random() * activeSegs.length);
                 }
             }
-            if (queue[winnerIdx]) {
-                usedUsernames.add(queue[winnerIdx].username.toLowerCase());
+
+            if (activeSegs[winnerIdx] && !activeSegs[winnerIdx].isGoldSpin) {
+                usedUsernames.add(activeSegs[winnerIdx].username.toLowerCase());
             }
             winnerIndices.push(winnerIdx);
         }
 
         let finishedCount = 0;
+
+        function finalizeMultiSpin() {
+            setTimeout(() => {
+                showWinners(winners);
+                // Remove non-gold winners from queue
+                if (!isOBS) {
+                    winners.forEach(winnerObj => {
+                        if (winnerObj && winnerObj.username && !winnerObj.isGoldSpin) {
+                            const idx = queue.findIndex(u => u.username.toLowerCase() === winnerObj.username.toLowerCase());
+                            if (idx !== -1) queue.splice(idx, 1);
+                        }
+                    });
+                    updateQueueUI();
+                    localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
+                }
+                refreshAllWheelSegments();
+            }, 600);
+        }
+
         wheels.forEach((w, i) => {
             const winIdx = winnerIndices[i];
-            w.spin((winner) => {
-                winners[i] = winner;
-                finishedCount++;
-                if (finishedCount === wheels.length) {
+            
+            // Ensure wheel is initialized with activeSegs
+            w.updateSegments(activeSegs);
+
+            w.spin((initialWinner) => {
+                // Check if this wheel landed on Gold Spin
+                if (initialWinner && initialWinner.isGoldSpin) {
+                    // GOLD SPIN ROUTINE
+                    if (w.canvas.parentElement) {
+                        w.canvas.parentElement.classList.add('gold-mode');
+                    }
+
+                    // Filter queue for Underdogs (contestants with lower weights)
+                    const maxWeight = Math.max(...queue.map(u => u.weight || 1));
+                    let underdogs = queue.filter(u => (u.weight || 1) < maxWeight);
+                    if (underdogs.length === 0) {
+                        underdogs = [...queue]; // Fallback to all if equal
+                    }
+
+                    const goldColors = ['#FFD700', '#FFA500', '#DAA520', '#FF8C00', '#FFEE55'];
+                    const goldSegments = underdogs.map((u, idx) => ({
+                        ...u,
+                        color: goldColors[idx % goldColors.length]
+                    }));
+
+                    // Underdog re-spin
+                    w.updateSegments(goldSegments);
+
+                    if (typeof confetti !== 'undefined') {
+                        confetti({
+                            particleCount: 90,
+                            spread: 80,
+                            origin: { y: 0.5 },
+                            colors: ['#FFD700', '#FFA500', '#FFFFFF', '#FFEE55']
+                        });
+                    }
+
                     setTimeout(() => {
-                        showWinners(winners);
-                        // Remove winners from queue so one person cannot win multiple times
-                        if (!isOBS) {
-                            winners.forEach(winnerObj => {
-                                const idx = queue.findIndex(u => u.username.toLowerCase() === winnerObj.username.toLowerCase());
-                                if (idx !== -1) queue.splice(idx, 1);
-                            });
-                            updateQueueUI();
-                            localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-                        }
-                        wheels.forEach(wh => wh.updateSegments(queue));
-                    }, 600);
+                        const underdogWinIdx = Math.floor(Math.random() * goldSegments.length);
+                        w.spin((underdogWinner) => {
+                            const goldWinner = { ...underdogWinner, isGoldWinner: true };
+                            winners[i] = goldWinner;
+
+                            if (w.canvas.parentElement) {
+                                w.canvas.parentElement.classList.remove('gold-mode');
+                            }
+
+                            if (typeof confetti !== 'undefined') {
+                                confetti({
+                                    particleCount: 120,
+                                    spread: 100,
+                                    origin: { y: 0.6 },
+                                    colors: ['#FFD700', '#FFA500', '#FFFFFF']
+                                });
+                            }
+
+                            finishedCount++;
+                            if (finishedCount === wheels.length) {
+                                finalizeMultiSpin();
+                            }
+                        }, underdogWinIdx, 4500);
+                    }, 800);
+
+                } else {
+                    // Regular Winner
+                    winners[i] = initialWinner;
+                    finishedCount++;
+                    if (finishedCount === wheels.length) {
+                        finalizeMultiSpin();
+                    }
                 }
             }, winIdx, duration);
         });
@@ -564,6 +676,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = '';
         winnersArray.forEach(winner => {
+            if (!winner || !winner.username) return;
+
             const card = document.createElement('div');
             card.className = 'winner-card-item';
             card.style.textAlign = 'center';
@@ -597,7 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const watchTimeHrs = getUserWatchTimeHours(winner.username);
             const userMetaObj = userMeta[winner.username.toLowerCase()] || {};
             const picUrl = winner.profile_pic || userMetaObj.profilePic;
-            const winnerColor = winner.color || '#53FC18';
+            const winnerColor = winner.isGoldWinner ? '#FFD700' : (winner.color || '#53FC18');
             const initial = (winner.username || 'W').charAt(0).toUpperCase();
 
             let avatarContentHtml = '';
@@ -612,11 +726,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
 
+            const goldBadgeHtml = winner.isGoldWinner 
+                ? `<div class="gold-winner-badge">🌟 Gold Spin Underdog Winner!</div>` 
+                : '';
+
             card.innerHTML = `
                 <div class="winner-avatar-circle" style="border-color: ${winnerColor};">
                     ${avatarContentHtml}
                 </div>
-                <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: var(--kick-green); margin-bottom: 0.3rem;">${winner.username}</div>
+                ${goldBadgeHtml}
+                <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: ${winner.isGoldWinner ? '#FFD700' : 'var(--kick-green)'}; margin-bottom: 0.3rem;">${winner.username}</div>
                 <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name}</div>
                 
                 <div class="winner-details-box" style="margin-top: 1.2rem; text-align: left; background: rgba(0,0,0,0.5); padding: 0.9rem; border-radius: 10px; border: var(--glass-border);">
@@ -676,6 +795,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Trigger confetti celebration!
+        if (typeof confetti !== 'undefined') {
+            confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
         winnerModal.classList.add('active');
 
         // Only host tab should modify history/persistence
@@ -686,6 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addToHistory(winner) {
+        if (!winner || !winner.username || winner.isGoldSpin) return;
         history.unshift(winner);
         if (history.length > 8) {
             history.pop();
@@ -862,6 +991,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Gold Spin Toggle
+        if (goldSpinToggle) {
+            goldSpinToggle.addEventListener('change', () => {
+                isGoldSpinEnabled = goldSpinToggle.checked;
+                localStorage.setItem('kick_wheel_gold_spin_enabled', isGoldSpinEnabled ? 'true' : 'false');
+                refreshAllWheelSegments();
+            });
+        }
+
         // Sub / VIP Multiplier Select
         if (subWeightSelect) {
             subWeightSelect.addEventListener('change', () => {
@@ -963,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 queue.length = 0;
                 updateQueueUI();
                 localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-                wheels.forEach(w => w.clear());
+                refreshAllWheelSegments();
             });
         }
 
@@ -1055,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     queue.length = 0;
                     updateQueueUI();
                     localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
-                    wheels.forEach(w => w.clear());
+                    refreshAllWheelSegments();
                 }
                 return;
             }
@@ -1145,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 queue.length = 0;
                 queue.push(...newQueue);
                 updateQueueUI();
-                wheels.forEach(w => w.updateSegments(queue));
+                refreshAllWheelSegments();
             } catch (err) {
                 console.error(err);
             }
@@ -1166,6 +1304,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const soundOn = e.newValue === 'true';
             if (soundToggle) soundToggle.checked = soundOn;
             if (typeof soundManager !== 'undefined') soundManager.enabled = soundOn;
+        }
+
+        if (e.key === 'kick_wheel_gold_spin_enabled' && e.newValue) {
+            isGoldSpinEnabled = e.newValue === 'true';
+            if (goldSpinToggle) goldSpinToggle.checked = isGoldSpinEnabled;
+            refreshAllWheelSegments();
         }
 
         if (e.key === 'kick_wheel_sub_multiplier' && e.newValue) {

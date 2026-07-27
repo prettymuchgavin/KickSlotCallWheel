@@ -908,3 +908,43 @@ body.obs-mode .winner-card {
 body.obs-mode #info-corner-container {
   display: none !important;
 }
+
+/* Gold Mode Styling */
+.wheel-container.gold-mode {
+  border: 4px solid #FFD700 !important;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(255, 215, 0, 0.4) !important;
+  animation: goldPulse 1s infinite alternate ease-in-out;
+}
+
+.wheel-container.gold-mode .wheel-pointer {
+  border-top-color: #FFD700 !important;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 1)) !important;
+}
+
+.wheel-container.gold-mode .wheel-center-hub {
+  border-color: #FFD700 !important;
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.9) !important;
+}
+
+@keyframes goldPulse {
+  0% {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 45px rgba(255, 215, 0, 1);
+  }
+}
+
+.gold-winner-badge {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+}
