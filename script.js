@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const soundToggle = document.getElementById('sound-toggle');
     const simpleGraphicsToggle = document.getElementById('simple-graphics-toggle');
     const goldSpinToggle = document.getElementById('gold-spin-toggle');
+    const weightedEntriesToggle = document.getElementById('weighted-entries-toggle');
+    const weightMultiplierBox = document.getElementById('weight-multiplier-box');
     const subWeightSelect = document.getElementById('sub-weight-select');
     const hubLogoInput = document.getElementById('hub-logo-input');
     const uploadLogoBtn = document.getElementById('upload-logo-btn');
@@ -47,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let subMultiplier = 2;
     let isGoldSpinEnabled = false;
     let isSimpleGraphics = false;
+    let isWeightedEntriesEnabled = true;
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -368,6 +371,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedGoldSpin !== null) {
         isGoldSpinEnabled = savedGoldSpin === 'true';
         if (goldSpinToggle) goldSpinToggle.checked = isGoldSpinEnabled;
+    }
+
+    const savedWeighted = localStorage.getItem('kick_wheel_weighted_entries_enabled');
+    if (savedWeighted !== null) {
+        isWeightedEntriesEnabled = savedWeighted === 'true';
+        if (weightedEntriesToggle) weightedEntriesToggle.checked = isWeightedEntriesEnabled;
+        if (weightMultiplierBox) weightMultiplierBox.style.display = isWeightedEntriesEnabled ? 'flex' : 'none';
     }
 
     const savedSubMult = localStorage.getItem('kick_wheel_sub_multiplier');
@@ -1075,6 +1085,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Weighted Entries Toggle
+        if (weightedEntriesToggle) {
+            weightedEntriesToggle.addEventListener('change', () => {
+                isWeightedEntriesEnabled = weightedEntriesToggle.checked;
+                localStorage.setItem('kick_wheel_weighted_entries_enabled', isWeightedEntriesEnabled ? 'true' : 'false');
+                if (weightMultiplierBox) weightMultiplierBox.style.display = isWeightedEntriesEnabled ? 'flex' : 'none';
+                if (!isWeightedEntriesEnabled) {
+                    queue.forEach(u => u.weight = 1);
+                    updateQueueUI();
+                    localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
+                    refreshAllWheelSegments();
+                }
+            });
+        }
+
         // Sub / VIP Multiplier Select
         if (subWeightSelect) {
             subWeightSelect.addEventListener('change', () => {
@@ -1236,7 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.1.2';
+        const CURRENT_VERSION = '1.1.3';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
@@ -1341,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Detect Subscriber / VIP / Mod weight multiplier
         let entryWeight = 1;
-        if (msg.sender) {
+        if (isWeightedEntriesEnabled && msg.sender) {
             const badges = (msg.sender.identity && msg.sender.identity.badges) || msg.sender.badges || [];
             const isSubOrVip = badges.some(b => {
                 const typeStr = (b.type || b.badge_id || b.name || '').toLowerCase();
@@ -1451,6 +1476,17 @@ document.addEventListener('DOMContentLoaded', () => {
             isGoldSpinEnabled = e.newValue === 'true';
             if (goldSpinToggle) goldSpinToggle.checked = isGoldSpinEnabled;
             refreshAllWheelSegments();
+        }
+
+        if (e.key === 'kick_wheel_weighted_entries_enabled' && e.newValue) {
+            isWeightedEntriesEnabled = e.newValue === 'true';
+            if (weightedEntriesToggle) weightedEntriesToggle.checked = isWeightedEntriesEnabled;
+            if (weightMultiplierBox) weightMultiplierBox.style.display = isWeightedEntriesEnabled ? 'flex' : 'none';
+            if (!isWeightedEntriesEnabled) {
+                queue.forEach(u => u.weight = 1);
+                updateQueueUI();
+                refreshAllWheelSegments();
+            }
         }
 
         if (e.key === 'kick_wheel_sub_multiplier' && e.newValue) {

@@ -98,11 +98,19 @@
                     </label>
                 </div>
 
-                <div class="weight-setting-container"
+                <div class="weighted-toggle-container"
                     style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Sub / VIP Entry Multiplier</span>
+                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">🎟️ Weighted Entries</span>
+                    <label class="switch">
+                        <input type="checkbox" id="weighted-entries-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="weight-setting-container" id="weight-multiplier-box"
+                    style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding-left: 8px;">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Sub / VIP Multiplier</span>
                     <select id="sub-weight-select" style="padding: 4px 8px; border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; border: var(--glass-border); font-weight: 600; cursor: pointer; outline: none; font-size: 0.8rem;">
-                        <option value="1">1x (Normal)</option>
                         <option value="2">2x Weight</option>
                         <option value="3">3x Weight</option>
                         <option value="5">5x Weight</option>
