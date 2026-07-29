@@ -587,6 +587,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     updateQueueUI();
                     localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
+
+                    // Automatically re-open entries when spin completes
+                    acceptEntries = true;
+                    if (acceptEntriesToggle) acceptEntriesToggle.checked = true;
+                    localStorage.setItem('kick_wheel_accept_entries', 'true');
+                    updateEntriesUI();
+                    updateInstructionBanner();
                 }
                 refreshAllWheelSegments();
             }, 600);
@@ -1261,7 +1268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.1.3';
+        const CURRENT_VERSION = '1.1.4';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
