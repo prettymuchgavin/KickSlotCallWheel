@@ -759,89 +759,6 @@ input:checked+.slider:before {
   transform: translateX(26px);
 }
 
-/* OBS Browser Source Overlay Mode */
-body.obs-mode {
-  background: transparent !important;
-  background-image: none !important;
-}
-
-body.obs-mode #sidebar,
-body.obs-mode .kofi-btn {
-  display: none !important;
-}
-
-body.obs-mode #stage {
-  width: 100vw;
-  height: 100vh;
-  max-width: 100%;
-  max-height: 100%;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-body.obs-mode #wheels-wrapper {
-  max-height: 75vh;
-  margin-bottom: 1rem;
-}
-
-body.obs-mode .wheel-container {
-  max-width: 65vh;
-  max-height: 65vh;
-}
-
-body.obs-mode #wheels-wrapper.wheels-2 .wheel-container,
-body.obs-mode #wheels-wrapper.wheels-3 .wheel-container,
-body.obs-mode #wheels-wrapper.wheels-4 .wheel-container {
-  max-width: 35vh;
-  max-height: 35vh;
-}
-
-body.obs-mode #wheels-wrapper.wheels-5 .wheel-container {
-  max-width: 28vh;
-  max-height: 28vh;
-}
-
-body.obs-mode .spin-btn {
-  pointer-events: none; /* Disables clicking in OBS */
-  font-size: 0 !important; /* Hides "SPIN" text */
-  box-shadow: 
-    0 0 0 6px var(--kick-green),
-    0 0 20px 5px var(--kick-green-glow);
-}
-
-body.obs-mode #recent-bar {
-  position: static;
-  transform: none;
-  background: rgba(0, 0, 0, 0.75);
-  border: 2px solid rgba(83, 252, 24, 0.3);
-  padding: 0.8rem 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  margin-top: 1rem;
-}
-
-body.obs-mode .recent-label {
-  font-size: 0.9rem;
-}
-
-body.obs-mode .recent-item {
-  font-size: 1rem;
-  padding: 0.4rem 1rem;
-  border-radius: 8px;
-}
-
-body.obs-mode #winner-modal {
-  background: rgba(0, 0, 0, 0.5); /* Less opaque background to see stream behind overlay */
-}
-
-body.obs-mode .winner-card {
-  box-shadow: 0 0 80px rgba(83, 252, 24, 0.6);
-}
-
 /* Bottom Corner Info Button & Banner Popup */
 #info-corner-container {
   position: absolute;
@@ -922,10 +839,6 @@ body.obs-mode .winner-card {
   border-radius: 4px;
   font-family: monospace;
   font-weight: 700;
-}
-
-body.obs-mode #info-corner-container {
-  display: none !important;
 }
 
 /* Gold Mode Styling */
@@ -1082,8 +995,4 @@ body.simple-graphics-mode .instruction-banner {
   gap: 15px;
   z-index: 9999;
   animation: slideIn 0.3s ease-out;
-}
-
-body.obs-mode #update-notification-banner {
-  display: none !important;
 }

@@ -3,12 +3,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- OBS Query Check ---
-    const isOBS = new URLSearchParams(window.location.search).has('obs');
-    if (isOBS) {
-        document.body.classList.add('obs-mode');
-    }
-
     // DOM Elements
     const kickUsernameInput = document.getElementById('kick-username');
     const connectBtn = document.getElementById('connect-btn');
@@ -435,38 +429,25 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQueueUI();
     updateHistoryUI();
 
-    // 8. OBS URL Parameters Check (Highest priority for OBS connection)
-    const queryUsername = urlParams.get('username') || urlParams.get('user');
-    const queryChannelId = urlParams.get('channel_id') || urlParams.get('channelId') || urlParams.get('id');
+    // LocalStorage auto-connect settings
+    const autoConnect = localStorage.getItem('kick_wheel_auto_connect') === 'true';
+    const connectionType = localStorage.getItem('kick_wheel_connection_type');
+    const savedUsername = localStorage.getItem('kick_wheel_username');
+    const savedId = localStorage.getItem('kick_wheel_channel_id');
 
-    if (isOBS && (queryUsername || queryChannelId)) {
-        console.log('OBS auto-connecting via URL query parameters...');
-        if (queryChannelId) {
-            connectWithId(queryChannelId);
-        } else if (queryUsername) {
-            connectToKick(queryUsername);
-        }
-    } else {
-        // Fallback to LocalStorage auto-connect settings
-        const autoConnect = localStorage.getItem('kick_wheel_auto_connect') === 'true';
-        const connectionType = localStorage.getItem('kick_wheel_connection_type');
-        const savedUsername = localStorage.getItem('kick_wheel_username');
-        const savedId = localStorage.getItem('kick_wheel_channel_id');
+    if (savedUsername && kickUsernameInput) kickUsernameInput.value = savedUsername;
+    if (savedId && document.getElementById('channel-id')) {
+        document.getElementById('channel-id').value = savedId;
+    }
 
-        if (savedUsername && kickUsernameInput) kickUsernameInput.value = savedUsername;
-        if (savedId && document.getElementById('channel-id')) {
-            document.getElementById('channel-id').value = savedId;
-        }
-
-        if (autoConnect) {
-            if (connectionType === 'manual' && savedId) {
-                if (document.getElementById('manual-connection')) {
-                    document.getElementById('manual-connection').style.display = 'block';
-                }
-                connectWithId(savedId);
-            } else if (savedUsername) {
-                connectToKick(savedUsername);
+    if (autoConnect) {
+        if (connectionType === 'manual' && savedId) {
+            if (document.getElementById('manual-connection')) {
+                document.getElementById('manual-connection').style.display = 'block';
             }
+            connectWithId(savedId);
+        } else if (savedUsername) {
+            connectToKick(savedUsername);
         }
     }
 
@@ -500,7 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateQueueUI() {
-        if (isOBS) return; // No sidebar UI in OBS overlay
         if (!queueContainer) return;
         
         queueContainer.innerHTML = '';
@@ -578,23 +558,22 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 showWinners(winners);
                 // Remove non-gold winners from queue
-                if (!isOBS) {
-                    winners.forEach(winnerObj => {
-                        if (winnerObj && winnerObj.username && !winnerObj.isGoldSpin) {
-                            const idx = queue.findIndex(u => u.username.toLowerCase() === winnerObj.username.toLowerCase());
-                            if (idx !== -1) queue.splice(idx, 1);
-                        }
-                    });
-                    updateQueueUI();
-                    localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
+                winners.forEach(winnerObj => {
+                    if (winnerObj && winnerObj.username && !winnerObj.isGoldSpin) {
+                        const idx = queue.findIndex(u => u.username.toLowerCase() === winnerObj.username.toLowerCase());
+                        if (idx !== -1) queue.splice(idx, 1);
+                    }
+                });
+                updateQueueUI();
+                localStorage.setItem('kick_wheel_queue', JSON.stringify(queue));
 
-                    // Automatically re-open entries when spin completes
-                    acceptEntries = true;
-                    if (acceptEntriesToggle) acceptEntriesToggle.checked = true;
-                    localStorage.setItem('kick_wheel_accept_entries', 'true');
-                    updateEntriesUI();
-                    updateInstructionBanner();
-                }
+                // Automatically re-open entries when spin completes
+                acceptEntries = true;
+                if (acceptEntriesToggle) acceptEntriesToggle.checked = true;
+                localStorage.setItem('kick_wheel_accept_entries', 'true');
+                updateEntriesUI();
+                updateInstructionBanner();
+
                 refreshAllWheelSegments();
             }, 600);
         }
@@ -836,16 +815,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             followStatusEl.innerText = `Active channel follower`;
                         }
-                    }
-                }).catch(() => {
-                    if (followStatusEl) followStatusEl.innerText = `Active channel follower`;
-                });
-            } else {
-                if (followStatusEl) followStatusEl.innerText = `Active channel follower`;
-            }
         });
 
-        // Trigger confetti celebration!
+        if (typeof soundManager !== 'undefined') soundManager.playWin();
+
         if (typeof confetti !== 'undefined') {
             confetti({
                 particleCount: 80,
@@ -855,12 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         winnerModal.classList.add('active');
-
-        // Only host tab should modify history/persistence
-        if (!isOBS) {
-            winnersArray.forEach(winner => addToHistory(winner));
-            localStorage.setItem('kick_wheel_modal_active', 'true');
-        }
+        winnersArray.forEach(winner => addToHistory(winner));
     }
 
     function addToHistory(winner) {
@@ -874,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateHistoryUI() {
-        const maxDisplay = isOBS ? 4 : 5;
+        const maxDisplay = 5;
         const list = document.getElementById('recent-list');
         if (!list) return;
         list.innerHTML = '';
@@ -905,11 +873,9 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('kick_wheel_auto_connect', 'true');
         } catch (err) {
             console.error('Failed to connect automatically:', err);
-            if (!isOBS) {
-                alert('Failed to connect automatically. Try Manual ID.');
-                if (document.getElementById('manual-connection')) {
-                    document.getElementById('manual-connection').style.display = 'block';
-                }
+            alert('Failed to connect automatically. Try Manual ID.');
+            if (document.getElementById('manual-connection')) {
+                document.getElementById('manual-connection').style.display = 'block';
             }
             setConnected(false);
             localStorage.removeItem('kick_wheel_auto_connect');
@@ -931,9 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('kick_wheel_auto_connect', 'true');
         } catch (err) {
             console.error('Failed to connect via Manual ID:', err);
-            if (!isOBS) {
-                alert('Failed to connect via Manual ID.');
-            }
+            alert('Failed to connect via Manual ID.');
             setConnected(false);
             localStorage.removeItem('kick_wheel_auto_connect');
         }
@@ -995,13 +959,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
 
-    if (!isOBS) {
-        // Single Master Spin Button Click
-        if (spinBtn) {
-            spinBtn.addEventListener('click', () => {
-                triggerMultiSpin();
-            });
-        }
+    // Single Master Spin Button Click
+    if (spinBtn) {
+        spinBtn.addEventListener('click', () => {
+            triggerMultiSpin();
+        });
+    }
 
         // Connect to Kick
         if (connectBtn) {
@@ -1280,34 +1243,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Copy OBS URL Helper
-        const copyObsUrlBtn = document.getElementById('copy-obs-url-btn');
-        if (copyObsUrlBtn) {
-            copyObsUrlBtn.addEventListener('click', () => {
-                const username = (kickUsernameInput ? kickUsernameInput.value.trim() : '') || connectedUsername || localStorage.getItem('kick_wheel_username') || '';
-                const baseUrl = window.location.href.split('?')[0];
-                const obsUrl = `${baseUrl}?obs=true${username ? '&user=' + encodeURIComponent(username) : ''}`;
-                
-                navigator.clipboard.writeText(obsUrl).then(() => {
-                    const originalText = copyObsUrlBtn.innerHTML;
-                    copyObsUrlBtn.innerHTML = '✅ OBS URL Copied!';
-                    copyObsUrlBtn.style.color = 'var(--kick-green)';
-                    setTimeout(() => {
-                        copyObsUrlBtn.innerHTML = originalText;
-                        copyObsUrlBtn.style.color = '#00F0FF';
-                    }, 2500);
-                }).catch(err => {
-                    alert(`OBS URL: ${obsUrl}`);
-                });
-            });
-        }
-
         // Version Checker Logic
-        const CURRENT_VERSION = '1.2.0';
+        const CURRENT_VERSION = '1.2.1';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
-            if (isOBS) return;
             try {
                 const response = await fetch(`${GITHUB_VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) return;
@@ -1336,7 +1276,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (banner) banner.style.display = 'none';
             });
         }
-    }
 
     // Unified Message Handler (Both Dashboard and OBS Overlay)
     function handleKickMessage(msg) {
@@ -1579,24 +1518,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCenterHubsLogo(hubLogoUrl);
         }
 
-        // Handle spin trigger sync for OBS view
-        if (e.key === 'kick_wheel_spin_event' && e.newValue) {
-            try {
-                const eventData = JSON.parse(e.newValue);
-                if (wheels.some(w => w.isSpinning)) return;
-                
-                triggerMultiSpin(eventData.winnerIndices || [eventData.winnerIndex], eventData.duration);
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        // Handle modal dismissal sync for OBS view
-        if (e.key === 'kick_wheel_modal_active' && e.newValue) {
-            if (e.newValue === 'false') {
-                winnerModal.classList.remove('active');
-            }
-        }
     });
 
     // Animation Loop for Wheels
