@@ -907,8 +907,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function setConnected(connected) {
         isConnected = connected;
         const manualConnectBtn = document.getElementById('manual-connect-btn');
+        const statusBadge = document.getElementById('connection-status-badge');
+        const statusText = document.getElementById('status-text');
 
         if (connected) {
+            if (statusBadge) statusBadge.className = 'status-badge connected';
+            if (statusText) statusText.innerText = `Live: ${connectedUsername || 'Connected'}`;
+
             if (connectBtn) {
                 connectBtn.disabled = false;
                 connectBtn.innerText = 'Disconnect';
@@ -929,6 +934,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 manualConnectBtn.style.border = '1px solid rgba(255, 100, 100, 0.4)';
             }
         } else {
+            if (statusBadge) statusBadge.className = 'status-badge disconnected';
+            if (statusText) statusText.innerText = 'Disconnected';
+
             if (connectBtn) {
                 connectBtn.disabled = false;
                 connectBtn.innerText = 'Connect Chat';
@@ -1224,21 +1232,47 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Quick Start Guide Accordion
-        const toggleGuideBtn = document.getElementById('toggle-guide-btn');
-        const guideContent = document.getElementById('guide-content');
-        const guideArrow = document.getElementById('guide-arrow');
+        // Sidebar Tab Navigation Logic
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-        if (toggleGuideBtn && guideContent) {
-            toggleGuideBtn.addEventListener('click', () => {
-                const isHidden = guideContent.style.display === 'none';
-                guideContent.style.display = isHidden ? 'block' : 'none';
-                if (guideArrow) guideArrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                btn.classList.add('active');
+                const targetEl = document.getElementById(targetTab);
+                if (targetEl) targetEl.classList.add('active');
+            });
+        });
+
+        // Onboarding Landing Welcome Modal Logic
+        const welcomeModal = document.getElementById('welcome-modal');
+        const openGuideBtn = document.getElementById('open-guide-btn');
+        const dismissWelcomeBtn = document.getElementById('dismiss-welcome-btn');
+
+        const hasSeenWelcome = localStorage.getItem('kick_wheel_landing_seen') === 'true';
+        if (!hasSeenWelcome && welcomeModal) {
+            welcomeModal.style.display = 'flex';
+        }
+
+        if (openGuideBtn && welcomeModal) {
+            openGuideBtn.addEventListener('click', () => {
+                welcomeModal.style.display = 'flex';
+            });
+        }
+
+        if (dismissWelcomeBtn && welcomeModal) {
+            dismissWelcomeBtn.addEventListener('click', () => {
+                welcomeModal.style.display = 'none';
+                localStorage.setItem('kick_wheel_landing_seen', 'true');
             });
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.2.2';
+        const CURRENT_VERSION = '1.3.0';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
