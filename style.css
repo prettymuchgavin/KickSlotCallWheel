@@ -143,6 +143,26 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.kofi-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ff5e5b;
+  background: rgba(255, 94, 91, 0.1);
+  border: 1px solid rgba(255, 94, 91, 0.3);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.kofi-btn:hover {
+  background: rgba(255, 94, 91, 0.2);
+  border-color: #ff5e5b;
+}
+
 #app {
   display: flex;
   flex: 1;
@@ -266,6 +286,26 @@ label {
   color: var(--text-secondary);
   margin-bottom: 0.4rem;
   font-weight: 600;
+}
+
+.control-group {
+  margin-bottom: 1rem;
+}
+
+.reminder-popup {
+  position: absolute;
+  bottom: -28px;
+  left: 0;
+  background: rgba(255, 94, 91, 0.15);
+  color: #ff6b6b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 94, 91, 0.3);
+  white-space: nowrap;
+  cursor: pointer;
+  animation: fadeIn 0.25s ease-out;
 }
 
 input[type="text"],
@@ -458,6 +498,31 @@ input:checked + .slider:before {
   width: 100%;
   flex: 1;
   max-height: min(52vh, 480px);
+}
+
+.wheels-grid.wheels-1 .wheel-container {
+  max-width: min(48vh, 440px);
+  max-height: min(48vh, 440px);
+}
+
+.wheels-grid.wheels-2 .wheel-container {
+  max-width: min(38vh, 360px);
+  max-height: min(38vh, 360px);
+}
+
+.wheels-grid.wheels-3 .wheel-container {
+  max-width: min(32vh, 300px);
+  max-height: min(32vh, 300px);
+}
+
+.wheels-grid.wheels-4 .wheel-container {
+  max-width: min(28vh, 260px);
+  max-height: min(28vh, 260px);
+}
+
+.wheels-grid.wheels-5 .wheel-container {
+  max-width: min(24vh, 220px);
+  max-height: min(24vh, 220px);
 }
 
 .wheel-container {
@@ -739,6 +804,29 @@ canvas.wheel-canvas {
   color: var(--kick-green);
   text-transform: uppercase;
   letter-spacing: -1px;
+}
+
+.winner-name {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--kick-green);
+  margin-bottom: 4px;
+}
+
+.winner-slot {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.winner-card-item {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.2rem 1.5rem;
+  border-radius: 14px;
+  border: 1px solid rgba(83, 252, 24, 0.3);
+  min-width: 260px;
+  max-width: 340px;
 }
 
 /* Gold Mode Wheel Styling */

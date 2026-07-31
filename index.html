@@ -17,8 +17,6 @@
     <!-- Pusher JS (for Kick Chat) -->
     <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
 
-    <!-- Canvas Confetti (for Winner celebration) -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -28,7 +26,7 @@
         <div class="header-left">
             <div class="brand-logo">
                 <span class="brand-title">Kick Slot Wheel</span>
-                <span class="version-tag">v1.3.2</span>
+                <span class="version-tag">v1.3.3</span>
             </div>
         </div>
 
@@ -303,7 +301,7 @@
     </div>
 
     <!-- Winner Modal -->
-    <div id="winner-modal">
+    <div id="winner-modal" style="display: none;">
         <div class="winner-card">
             <div class="winner-text" id="winner-modal-title">Winner!</div>
             <div id="winners-container" style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
@@ -313,8 +311,7 @@
                 </div>
             </div>
             <div style="margin-top: 2rem;">
-                <button class="btn btn-primary"
-                    onclick="const m = document.getElementById('winner-modal'); if(m){ m.classList.remove('active'); m.style.display='none'; }">Close</button>
+                <button class="btn btn-primary" id="close-winner-btn">Close</button>
             </div>
         </div>
     </div>
@@ -357,7 +354,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 1.4rem;">🚀</span>
             <div style="text-align: left;">
-                <strong style="font-size: 0.95rem; color: #fff;">New Update Available (<span id="latest-version-tag">v1.3.1</span>)!</strong>
+                <strong style="font-size: 0.95rem; color: #fff;">New Update Available (<span id="latest-version-tag">v1.3.3</span>)!</strong>
                 <div style="font-size: 0.8rem; color: rgba(255,255,255,0.9); margin-top: 2px;">Please hard-refresh your browser using <strong>Ctrl + Shift + R</strong> to load the latest version.</div>
             </div>
         </div>

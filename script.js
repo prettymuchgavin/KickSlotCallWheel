@@ -1275,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.3.2';
+        const CURRENT_VERSION = '1.3.3';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
@@ -1437,18 +1437,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Close buttons inside Winner Modal
-    const modalCloseBtn = winnerModal.querySelector('.btn-primary');
+    const modalCloseBtn = document.getElementById('close-winner-btn');
     if (modalCloseBtn) {
-        modalCloseBtn.removeAttribute('onclick'); // remove inline handler
         modalCloseBtn.addEventListener('click', dismissWinnerModal);
     }
     
     // Background Overlay Click Dismissal
-    winnerModal.addEventListener('click', (e) => {
-        if (e.target === winnerModal) {
-            dismissWinnerModal();
-        }
-    });
+    if (winnerModal) {
+        winnerModal.addEventListener('click', (e) => {
+            if (e.target === winnerModal) {
+                dismissWinnerModal();
+            }
+        });
+    }
 
     // --- Real-time LocalStorage Synchronization ---
     window.addEventListener('storage', (e) => {
