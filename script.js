@@ -680,9 +680,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showWinners(winnersArray) {
+        if (!winnersArray || winnersArray.length === 0) return;
+
         const modalTitle = document.getElementById('winner-modal-title');
         const container = document.getElementById('winners-container');
         if (!container) return;
+
+        if (winnerModal) {
+            winnerModal.style.display = 'flex';
+        }
 
         if (modalTitle) {
             modalTitle.innerText = winnersArray.length > 1 ? `Winners (${winnersArray.length})!` : 'Winner!';
@@ -692,122 +698,127 @@ document.addEventListener('DOMContentLoaded', () => {
         winnersArray.forEach(winner => {
             if (!winner || !winner.username) return;
 
-            const card = document.createElement('div');
-            card.className = 'winner-card-item';
-            card.style.textAlign = 'center';
-            card.style.background = 'rgba(255, 255, 255, 0.05)';
-            card.style.padding = '1.2rem 1.5rem';
-            card.style.borderRadius = '14px';
-            card.style.border = '1px solid rgba(83, 252, 24, 0.3)';
-            card.style.minWidth = '260px';
-            card.style.maxWidth = '340px';
+            try {
+                const card = document.createElement('div');
+                card.className = 'winner-card-item';
+                card.style.textAlign = 'center';
+                card.style.background = 'rgba(255, 255, 255, 0.05)';
+                card.style.padding = '1.2rem 1.5rem';
+                card.style.borderRadius = '14px';
+                card.style.border = '1px solid rgba(83, 252, 24, 0.3)';
+                card.style.minWidth = '260px';
+                card.style.maxWidth = '340px';
 
-            const activeChannel = (connectedUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
-            const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
-            const userMsgs = chatLogs.filter(m => 
-                m.username.toLowerCase() === winner.username.toLowerCase() && 
-                m.timestamp >= twoDaysAgo &&
-                (!m.channel || !activeChannel || m.channel.toLowerCase() === activeChannel)
-            );
+                const activeChannel = (connectedUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
+                const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
+                const userMsgs = chatLogs.filter(m => 
+                    m && m.username &&
+                    m.username.toLowerCase() === winner.username.toLowerCase() && 
+                    m.timestamp >= twoDaysAgo &&
+                    (!m.channel || !activeChannel || m.channel.toLowerCase() === activeChannel)
+                );
 
-            let userMessagesHtml = '';
-            if (userMsgs.length === 0) {
-                userMessagesHtml = '<div style="color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No recent chat messages logged</div>';
-            } else {
-                userMessagesHtml = userMsgs.slice().reverse().map(m => `
-                    <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
-                        <span style="color: #eee; word-break: break-word; text-align: left;">"${m.content}"</span>
-                        <span style="color: var(--text-secondary); white-space: nowrap; font-size: 0.75rem;">${formatTimeAgo(m.timestamp)}</span>
+                let userMessagesHtml = '';
+                if (userMsgs.length === 0) {
+                    userMessagesHtml = '<div style="color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No recent chat messages logged</div>';
+                } else {
+                    userMessagesHtml = userMsgs.slice().reverse().map(m => `
+                        <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                            <span style="color: #eee; word-break: break-word; text-align: left;">"${m.content || ''}"</span>
+                            <span style="color: var(--text-secondary); white-space: nowrap; font-size: 0.75rem;">${formatTimeAgo(m.timestamp)}</span>
+                        </div>
+                    `).join('');
+                }
+
+                const watchTimeHrs = getUserWatchTimeHours(winner.username);
+                const userMetaObj = userMeta[winner.username.toLowerCase()] || {};
+                const picUrl = winner.profile_pic || userMetaObj.profilePic;
+                const winnerColor = winner.isGoldWinner ? '#FFD700' : (winner.color || '#53FC18');
+                const initial = (winner.username || 'W').charAt(0).toUpperCase();
+
+                let avatarContentHtml = '';
+                if (picUrl) {
+                    avatarContentHtml = `
+                        <img src="${picUrl}" class="winner-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" alt="${winner.username}">
+                        <div class="winner-avatar-initial" style="background-color: ${winnerColor}; display: none;">${initial}</div>
+                    `;
+                } else {
+                    avatarContentHtml = `
+                        <div class="winner-avatar-initial" style="background-color: ${winnerColor};">${initial}</div>
+                    `;
+                }
+
+                const goldBadgeHtml = winner.isGoldWinner 
+                    ? `<div class="gold-winner-badge">🌟 Gold Spin Underdog Winner!</div>` 
+                    : '';
+
+                card.innerHTML = `
+                    <div class="winner-avatar-circle" style="border-color: ${winnerColor};">
+                        ${avatarContentHtml}
                     </div>
-                `).join('');
-            }
-
-            const watchTimeHrs = getUserWatchTimeHours(winner.username);
-            const userMetaObj = userMeta[winner.username.toLowerCase()] || {};
-            const picUrl = winner.profile_pic || userMetaObj.profilePic;
-            const winnerColor = winner.isGoldWinner ? '#FFD700' : (winner.color || '#53FC18');
-            const initial = (winner.username || 'W').charAt(0).toUpperCase();
-
-            let avatarContentHtml = '';
-            if (picUrl) {
-                avatarContentHtml = `
-                    <img src="${picUrl}" class="winner-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" alt="${winner.username}">
-                    <div class="winner-avatar-initial" style="background-color: ${winnerColor}; display: none;">${initial}</div>
+                    ${goldBadgeHtml}
+                    <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: ${winner.isGoldWinner ? '#FFD700' : 'var(--kick-green)'}; margin-bottom: 0.3rem;">${winner.username}</div>
+                    <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name || winner.username}</div>
+                    
+                    <div class="winner-details-box" style="margin-top: 1.2rem; text-align: left; background: rgba(0,0,0,0.5); padding: 0.9rem; border-radius: 10px; border: var(--glass-border);">
+                        <div style="font-size: 0.85rem; font-weight: 700; color: #FFBE0B; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px;">
+                            <span>🎯</span> <span>Win Odds: ${winner.winOddsPercent || '100.0'}% (${winner.userWeight || 1} / ${winner.totalWheelWeight || 1} tickets)</span>
+                        </div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.6rem; padding-left: 22px;">
+                            <span>Method: ${winner.winMethod || 'Standard Spin'} (${winner.totalContestants || 1} contestants)</span>
+                        </div>
+                        <div style="font-size: 0.85rem; font-weight: 700; color: #00F0FF; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 6px;">
+                            <span>⏱️</span> <span>Watch Time: ${watchTimeHrs.toFixed(1)} hrs</span>
+                        </div>
+                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--kick-green); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px;">
+                            <span>📅</span> <span class="follow-status-text">Checking follower info...</span>
+                        </div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; border-bottom: var(--glass-border); padding-bottom: 0.3rem;">
+                            💬 Messages (Past 2 Days):
+                        </div>
+                        <div class="winner-chat-history" style="display: flex; flex-direction: column; gap: 3px;">
+                            ${userMessagesHtml}
+                        </div>
+                    </div>
                 `;
-            } else {
-                avatarContentHtml = `
-                    <div class="winner-avatar-initial" style="background-color: ${winnerColor};">${initial}</div>
-                `;
-            }
+                container.appendChild(card);
 
-            const goldBadgeHtml = winner.isGoldWinner 
-                ? `<div class="gold-winner-badge">🌟 Gold Spin Underdog Winner!</div>` 
-                : '';
+                // Async fetch follow info
+                const followStatusEl = card.querySelector('.follow-status-text');
+                const channelSlug = connectedUsername || localStorage.getItem('kick_wheel_username') || '';
 
-            card.innerHTML = `
-                <div class="winner-avatar-circle" style="border-color: ${winnerColor};">
-                    ${avatarContentHtml}
-                </div>
-                ${goldBadgeHtml}
-                <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: ${winner.isGoldWinner ? '#FFD700' : 'var(--kick-green)'}; margin-bottom: 0.3rem;">${winner.username}</div>
-                <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name}</div>
-                
-                <div class="winner-details-box" style="margin-top: 1.2rem; text-align: left; background: rgba(0,0,0,0.5); padding: 0.9rem; border-radius: 10px; border: var(--glass-border);">
-                    <div style="font-size: 0.85rem; font-weight: 700; color: #FFBE0B; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 6px;">
-                        <span>🎯</span> <span>Win Odds: ${winner.winOddsPercent || '100.0'}% (${winner.userWeight || 1} / ${winner.totalWheelWeight || 1} tickets)</span>
-                    </div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.6rem; padding-left: 22px;">
-                        <span>Method: ${winner.winMethod || 'Standard Spin'} (${winner.totalContestants || 1} contestants)</span>
-                    </div>
-                    <div style="font-size: 0.85rem; font-weight: 700; color: #00F0FF; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 6px;">
-                        <span>⏱️</span> <span>Watch Time: ${watchTimeHrs.toFixed(1)} hrs</span>
-                    </div>
-                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--kick-green); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px;">
-                        <span>📅</span> <span class="follow-status-text">Checking follower info...</span>
-                    </div>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; border-bottom: var(--glass-border); padding-bottom: 0.3rem;">
-                        💬 Messages (Past 2 Days):
-                    </div>
-                    <div class="winner-chat-history" style="display: flex; flex-direction: column; gap: 3px;">
-                        ${userMessagesHtml}
-                    </div>
-                </div>
-            `;
-            container.appendChild(card);
-
-            // Async fetch follow info
-            const followStatusEl = card.querySelector('.follow-status-text');
-            const channelSlug = connectedUsername || localStorage.getItem('kick_wheel_username') || '';
-
-            if (channelSlug) {
-                kickHandler.getUserFollowInfo(channelSlug, winner.username).then(info => {
-                    if (info) {
-                        const fetchedPic = info.profile_pic || info.profilepic || info.profile_picture || (info.user && (info.user.profile_pic || info.user.profilepic || info.user.profile_picture));
-                        if (fetchedPic) {
-                            const avatarCircle = card.querySelector('.winner-avatar-circle');
-                            if (avatarCircle && !avatarCircle.querySelector('img')) {
-                                avatarCircle.innerHTML = `
-                                    <img src="${fetchedPic}" class="winner-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" alt="${winner.username}">
-                                `;
+                if (channelSlug) {
+                    kickHandler.getUserFollowInfo(channelSlug, winner.username).then(info => {
+                        if (info) {
+                            const fetchedPic = info.profile_pic || info.profilepic || info.profile_picture || (info.user && (info.user.profile_pic || info.user.profilepic || info.user.profile_picture));
+                            if (fetchedPic) {
+                                const avatarCircle = card.querySelector('.winner-avatar-circle');
+                                if (avatarCircle && !avatarCircle.querySelector('img')) {
+                                    avatarCircle.innerHTML = `
+                                        <img src="${fetchedPic}" class="winner-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" alt="${winner.username}">
+                                    `;
+                                }
                             }
                         }
-                    }
-                    if (!followStatusEl) return;
-                    if (info && (info.following_since || info.followed_at || info.created_at)) {
-                        const dateStr = info.following_since || info.followed_at || info.created_at;
-                        const prefix = info.following_since ? 'Following for' : 'Member for';
-                        followStatusEl.innerText = `${prefix} ${formatDuration(dateStr)}`;
-                    } else {
-                        const meta = userMeta[winner.username.toLowerCase()];
-                        if (meta && meta.createdAt) {
-                            followStatusEl.innerText = `Kick user for ${formatDuration(meta.createdAt)}`;
+                        if (!followStatusEl) return;
+                        if (info && (info.following_since || info.followed_at || info.created_at)) {
+                            const dateStr = info.following_since || info.followed_at || info.created_at;
+                            const prefix = info.following_since ? 'Following for' : 'Member for';
+                            followStatusEl.innerText = `${prefix} ${formatDuration(dateStr)}`;
                         } else {
-                            followStatusEl.innerText = `Active channel follower`;
+                            const meta = userMeta[winner.username.toLowerCase()];
+                            if (meta && meta.createdAt) {
+                                followStatusEl.innerText = `Kick user for ${formatDuration(meta.createdAt)}`;
+                            } else {
+                                followStatusEl.innerText = `Active channel follower`;
+                            }
                         }
-                    }
-                }).catch(() => {
-                    if (followStatusEl) followStatusEl.innerText = `Active channel follower`;
-                });
+                    }).catch(() => {
+                        if (followStatusEl) followStatusEl.innerText = `Active channel follower`;
+                    });
+                }
+            } catch (err) {
+                console.error("Error rendering winner card:", err);
             }
         });
 
@@ -821,10 +832,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        if (winnerModal) {
-            console.log('[DEBUG] Showing winner modal');
-            winnerModal.style.display = 'flex';
-        }
         winnersArray.forEach(winner => addToHistory(winner));
     }
 
@@ -1275,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.3.4';
+        const CURRENT_VERSION = '1.3.5';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
