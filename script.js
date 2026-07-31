@@ -677,15 +677,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, winIdx, duration);
         });
-
-        // Broadcast to OBS window if triggered on Host window
-        if (!isOBS && !forcedWinners) {
-            localStorage.setItem('kick_wheel_spin_event', JSON.stringify({
-                timestamp: Date.now(),
-                winnerIndices: winnerIndices,
-                duration: duration
-            }));
-        }
     }
 
     function showWinners(winnersArray) {
@@ -711,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.minWidth = '260px';
             card.style.maxWidth = '340px';
 
-            const activeChannel = (connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
+            const activeChannel = (connectedUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
             const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
             const userMsgs = chatLogs.filter(m => 
                 m.username.toLowerCase() === winner.username.toLowerCase() && 
@@ -786,19 +777,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Async fetch follow info
             const followStatusEl = card.querySelector('.follow-status-text');
-            const channelSlug = connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '';
+            const channelSlug = connectedUsername || localStorage.getItem('kick_wheel_username') || '';
 
             if (channelSlug) {
                 kickHandler.getUserFollowInfo(channelSlug, winner.username).then(info => {
                     if (info) {
                         const fetchedPic = info.profile_pic || info.profilepic || info.profile_picture || (info.user && (info.user.profile_pic || info.user.profilepic || info.user.profile_picture));
                         if (fetchedPic) {
-                            userMetaObj.profilePic = fetchedPic;
                             const avatarCircle = card.querySelector('.winner-avatar-circle');
                             if (avatarCircle && !avatarCircle.querySelector('img')) {
                                 avatarCircle.innerHTML = `
                                     <img src="${fetchedPic}" class="winner-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" alt="${winner.username}">
-                                    <div class="winner-avatar-initial" style="background-color: ${winnerColor}; display: none;">${initial}</div>
                                 `;
                             }
                         }
@@ -815,6 +804,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             followStatusEl.innerText = `Active channel follower`;
                         }
+                    }
+                }).catch(() => {
+                    if (followStatusEl) followStatusEl.innerText = `Active channel follower`;
+                });
+            }
         });
 
         if (typeof soundManager !== 'undefined') soundManager.playWin();
@@ -1244,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.2.1';
+        const CURRENT_VERSION = '1.2.2';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
@@ -1284,7 +1278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = msg.content.trim();
         const lowerContent = content.toLowerCase();
 
-        const activeChan = (connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
+        const activeChan = (connectedUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
 
         // Track user messages, metadata & watch time activity
         if (msg.sender && msg.sender.username) {
@@ -1319,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Broadcaster chat command overrides (Sync across tabs)
-        const currentChannelName = connectedUsername || queryUsername || localStorage.getItem('kick_wheel_username') || '';
+        const currentChannelName = connectedUsername || localStorage.getItem('kick_wheel_username') || '';
         const isStreamer = currentChannelName && msg.sender.username.toLowerCase() === currentChannelName.toLowerCase();
         
         if (isStreamer) {
