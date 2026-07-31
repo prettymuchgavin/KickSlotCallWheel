@@ -24,17 +24,54 @@
 <body>
 
     <div id="app">
-        <!-- Sidebar Controls -->
+        <!-- Sidebar / Controls -->
         <aside id="sidebar">
-            <h1>Kick Slot<br>Caller</h1>
+            <header style="margin-bottom: 1rem;">
+                <h1 style="margin-bottom: 0.2rem;">Kick Slot Wheel</h1>
+                <div style="font-size: 0.78rem; color: var(--text-secondary);">Interactive Stream Giveaways & Slot Calls</div>
+            </header>
 
-            <div class="control-group">
-                <label for="kick-username">Kick Username</label>
+            <!-- Quick Start Guide for New Streamers -->
+            <div id="quick-start-card" style="background: rgba(83, 252, 24, 0.08); border: 1px solid rgba(83, 252, 24, 0.25); border-radius: 10px; padding: 0.75rem; margin-bottom: 1.2rem;">
+                <div id="toggle-guide-btn" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: var(--kick-green); flex: 1;">👋 New Here? Quick Start Guide</span>
+                    <span id="guide-arrow" style="font-size: 0.75rem; color: var(--kick-green); transition: transform 0.2s;">▲</span>
+                </div>
+                <div id="guide-content" style="font-size: 0.78rem; color: #ddd; margin-top: 0.6rem; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem;">
+                    <ol style="margin-left: 1.1rem; display: flex; flex-direction: column; gap: 4px;">
+                        <li>Enter your <strong>Kick Username</strong> below & click <strong>Connect Chat</strong>.</li>
+                        <li>Turn on <strong>Accept Entries</strong> so chatters can enter.</li>
+                        <li>Click <strong>SPIN</strong> on the wheel to pick your winner!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Section 1: Connection -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">📡 Stream Connection</div>
+                
+                <label for="kick-username" style="font-size: 0.8rem; margin-bottom: 4px;">Kick Channel Username</label>
                 <input type="text" id="kick-username" placeholder="e.g. trainwreckstv">
+                
+                <button id="connect-btn" class="btn btn-primary" style="margin-top: 10px;">Connect Chat</button>
+                <button id="copy-obs-url-btn" class="btn btn-secondary" style="margin-top: 8px; background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.3); color: #00F0FF; font-size: 0.8rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    📋 Copy OBS Overlay URL
+                </button>
+            </div>
+
+            <div class="control-group" id="manual-connection" style="display: none; margin-bottom: 1rem;">
+                <label for="channel-id" style="font-size: 0.8rem;">Manual Channel ID</label>
+                <input type="text" id="channel-id" placeholder="Channel ID number">
+                <button id="manual-connect-btn" class="btn btn-primary" style="margin-top: 8px;">Connect</button>
+            </div>
+
+            <!-- Section 2: Mode & Entries -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">⚙️ Giveaway & Entries</div>
 
                 <div class="mode-toggle-container"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <span id="mode-label" style="font-size: 0.9rem; font-weight: 600;">Slot Call Mode</span>
+                    style="display: flex; align-items: center; justify-content: space-between;">
+                    <span id="mode-label" style="font-size: 0.88rem; font-weight: 600;">Slot Call Mode</span>
                     <label class="switch">
                         <input type="checkbox" id="mode-toggle">
                         <span class="slider round"></span>
@@ -42,8 +79,8 @@
                 </div>
 
                 <div class="entries-toggle-container"
-                    style="position: relative; margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <span id="entries-label" style="font-size: 0.9rem; font-weight: 600; color: var(--kick-green);">Entries Open</span>
+                    style="position: relative; margin-top: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span id="entries-label" style="font-size: 0.88rem; font-weight: 600; color: var(--kick-green);">Entries Open</span>
                     <label class="switch">
                         <input type="checkbox" id="accept-entries-toggle" checked>
                         <span class="slider round"></span>
@@ -53,45 +90,44 @@
                     </div>
                 </div>
 
-                <div id="giveaway-settings-container" style="display: none; margin-top: 12px; background: rgba(0, 0, 0, 0.25); padding: 10px 12px; border-radius: 8px; border: var(--glass-border);">
-                    <label for="giveaway-keyword-input" style="font-size: 0.8rem; margin-bottom: 4px;">Giveaway Keyword</label>
-                    <input type="text" id="giveaway-keyword-input" placeholder="e.g. !giveaway" value="!giveaway" style="padding: 0.5rem 0.8rem; font-size: 0.85rem;">
+                <div id="giveaway-settings-container" style="display: none; margin-top: 12px; background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 8px; border: var(--glass-border);">
+                    <label for="giveaway-keyword-input" style="font-size: 0.78rem; margin-bottom: 4px;">Giveaway Keyword</label>
+                    <input type="text" id="giveaway-keyword-input" placeholder="e.g. !giveaway" value="!giveaway" style="padding: 0.45rem 0.7rem; font-size: 0.82rem;">
                     
                     <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
-                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Hide Keyword on Banner</span>
+                        <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Hide Keyword on Banner</span>
                         <label class="switch" style="transform: scale(0.85);">
                             <input type="checkbox" id="hide-keyword-toggle">
                             <span class="slider round"></span>
                         </label>
                     </div>
 
-                    <div style="margin-top: 10px; border-top: var(--glass-border); padding-top: 10px;">
-                        <label for="min-watchtime-input" style="font-size: 0.8rem; margin-bottom: 4px;">Min Watch Time (Hours)</label>
-                        <input type="number" id="min-watchtime-input" min="0" step="0.5" value="0" placeholder="0 = No minimum" style="padding: 0.5rem 0.8rem; font-size: 0.85rem;">
+                    <div style="margin-top: 10px; border-top: var(--glass-border); padding-top: 8px;">
+                        <label for="min-watchtime-input" style="font-size: 0.78rem; margin-bottom: 4px;">Min Watch Time (Hours)</label>
+                        <input type="number" id="min-watchtime-input" min="0" step="0.5" value="0" placeholder="0 = No minimum" style="padding: 0.45rem 0.7rem; font-size: 0.82rem;">
                     </div>
                 </div>
+            </div>
 
-                <div class="sound-toggle-container"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 0.9rem; font-weight: 600;">🔊 Sound Effects</span>
-                    <label class="switch">
-                        <input type="checkbox" id="sound-toggle" checked>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
+            <!-- Section 3: Wheel & Features -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">🎨 Wheel Customization</div>
 
-                <div class="graphics-toggle-container"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">⚡ Simple Graphics Mode</span>
-                    <label class="switch">
-                        <input type="checkbox" id="simple-graphics-toggle">
-                        <span class="slider round"></span>
-                    </label>
+                <div class="wheel-count-container"
+                    style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 0.85rem; font-weight: 600;">Number of Wheels</span>
+                    <select id="wheel-count-select" style="padding: 4px 8px; border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; border: var(--glass-border); font-weight: 600; cursor: pointer; outline: none; font-size: 0.8rem;">
+                        <option value="1">1 Wheel</option>
+                        <option value="2">2 Wheels</option>
+                        <option value="3">3 Wheels</option>
+                        <option value="4">4 Wheels</option>
+                        <option value="5">5 Wheels</option>
+                    </select>
                 </div>
 
                 <div class="gold-spin-toggle-container"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 0.9rem; font-weight: 600; color: #FFD700;">🌟 Include Gold Spin</span>
+                    style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: #FFD700;">🌟 Include Gold Spin</span>
                     <label class="switch">
                         <input type="checkbox" id="gold-spin-toggle">
                         <span class="slider round"></span>
@@ -99,7 +135,7 @@
                 </div>
 
                 <div class="weighted-toggle-container"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                    style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between;">
                     <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">🎟️ Weighted Entries</span>
                     <label class="switch">
                         <input type="checkbox" id="weighted-entries-toggle" checked>
@@ -109,7 +145,7 @@
 
                 <div class="weight-setting-container" id="weight-multiplier-box"
                     style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding-left: 8px;">
-                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Sub / VIP Multiplier</span>
+                    <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Sub / VIP Multiplier</span>
                     <select id="sub-weight-select" style="padding: 4px 8px; border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; border: var(--glass-border); font-weight: 600; cursor: pointer; outline: none; font-size: 0.8rem;">
                         <option value="2">2x Weight</option>
                         <option value="3">3x Weight</option>
@@ -117,39 +153,41 @@
                     </select>
                 </div>
 
-                <div class="hub-logo-container" style="margin-top: 15px; border-top: var(--glass-border); padding-top: 12px;">
-                    <label for="hub-logo-input" style="font-size: 0.8rem; margin-bottom: 4px; display: block; font-weight: 600;">Center Wheel Logo URL</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="hub-logo-input" placeholder="e.g. https://.../logo.png" style="flex: 1; padding: 0.4rem 0.7rem; font-size: 0.8rem;">
-                        <button id="upload-logo-btn" type="button" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(83,252,24,0.15); color: var(--kick-green); border: 1px solid rgba(83,252,24,0.4); border-radius: 6px; cursor: pointer; font-weight: 600;">Upload</button>
+                <div class="hub-logo-container" style="margin-top: 12px; border-top: var(--glass-border); padding-top: 10px;">
+                    <label for="hub-logo-input" style="font-size: 0.78rem; margin-bottom: 4px; display: block; font-weight: 600;">Center Wheel Logo URL</label>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="hub-logo-input" placeholder="e.g. https://.../logo.png" style="flex: 1; padding: 0.4rem 0.6rem; font-size: 0.78rem;">
+                        <button id="upload-logo-btn" type="button" style="padding: 0.4rem 0.7rem; font-size: 0.78rem; background: rgba(83,252,24,0.15); color: var(--kick-green); border: 1px solid rgba(83,252,24,0.4); border-radius: 6px; cursor: pointer; font-weight: 600;">Upload</button>
                         <input type="file" id="hub-logo-file" accept="image/*" style="display: none;">
                     </div>
                 </div>
 
-                <div class="wheel-count-container"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 0.9rem; font-weight: 600;">Number of Wheels</span>
-                    <select id="wheel-count-select" style="padding: 5px 10px; border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; border: var(--glass-border); font-weight: 600; cursor: pointer; outline: none;">
-                        <option value="1">1 Wheel</option>
-                        <option value="2">2 Wheels</option>
-                        <option value="3">3 Wheels</option>
-                        <option value="4">4 Wheels</option>
-                        <option value="5">5 Wheels</option>
-                    </select>
+                <div class="sound-toggle-container"
+                    style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 0.85rem; font-weight: 600;">🔊 Sound Effects</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sound-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
                 </div>
 
-                <button id="connect-btn" class="btn btn-primary" style="margin-top: 15px;">Connect Chat</button>
+                <div class="graphics-toggle-container"
+                    style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">⚡ Simple Graphics Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="simple-graphics-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
 
-                <button id="fairness-btn" class="btn btn-secondary" style="margin-top: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(83, 252, 24, 0.3); color: #fff; font-size: 0.85rem; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <!-- Section 4: Fairness -->
+            <div class="sidebar-section" style="margin-bottom: 0.5rem;">
+                <button id="fairness-btn" class="btn btn-secondary" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(83, 252, 24, 0.3); color: #fff; font-size: 0.82rem; font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
                     🛡️ Is this site fair?
                 </button>
             </div>
 
-            <div class="control-group" id="manual-connection" style="display: none;">
-                <label for="channel-id">Manual Channel ID (If auto-detect fails)</label>
-                <input type="number" id="channel-id" placeholder="e.g. 123456">
-                <button id="manual-connect-btn" class="btn btn-secondary">Connect Function</button>
-            </div>
 
             <div class="queue-header">
                 <span>Queue (<span id="queue-count">0</span>)</span>

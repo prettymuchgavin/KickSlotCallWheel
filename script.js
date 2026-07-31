@@ -1267,8 +1267,43 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Quick Start Guide Accordion
+        const toggleGuideBtn = document.getElementById('toggle-guide-btn');
+        const guideContent = document.getElementById('guide-content');
+        const guideArrow = document.getElementById('guide-arrow');
+
+        if (toggleGuideBtn && guideContent) {
+            toggleGuideBtn.addEventListener('click', () => {
+                const isHidden = guideContent.style.display === 'none';
+                guideContent.style.display = isHidden ? 'block' : 'none';
+                if (guideArrow) guideArrow.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+            });
+        }
+
+        // Copy OBS URL Helper
+        const copyObsUrlBtn = document.getElementById('copy-obs-url-btn');
+        if (copyObsUrlBtn) {
+            copyObsUrlBtn.addEventListener('click', () => {
+                const username = (kickUsernameInput ? kickUsernameInput.value.trim() : '') || connectedUsername || localStorage.getItem('kick_wheel_username') || '';
+                const baseUrl = window.location.href.split('?')[0];
+                const obsUrl = `${baseUrl}?obs=true${username ? '&user=' + encodeURIComponent(username) : ''}`;
+                
+                navigator.clipboard.writeText(obsUrl).then(() => {
+                    const originalText = copyObsUrlBtn.innerHTML;
+                    copyObsUrlBtn.innerHTML = '✅ OBS URL Copied!';
+                    copyObsUrlBtn.style.color = 'var(--kick-green)';
+                    setTimeout(() => {
+                        copyObsUrlBtn.innerHTML = originalText;
+                        copyObsUrlBtn.style.color = '#00F0FF';
+                    }, 2500);
+                }).catch(err => {
+                    alert(`OBS URL: ${obsUrl}`);
+                });
+            });
+        }
+
         // Version Checker Logic
-        const CURRENT_VERSION = '1.1.4';
+        const CURRENT_VERSION = '1.2.0';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {

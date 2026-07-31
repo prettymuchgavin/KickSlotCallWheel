@@ -63,6 +63,27 @@ body {
   border-radius: 3px;
 }
 
+/* Sidebar Section Cards */
+.sidebar-section {
+  background: rgba(0, 0, 0, 0.3);
+  border: var(--glass-border);
+  border-radius: 12px;
+  padding: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+
+.sidebar-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--kick-green);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 h1 {
   font-size: 1.8rem;
   font-weight: 800;
