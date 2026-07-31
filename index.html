@@ -28,7 +28,7 @@
         <div class="header-left">
             <div class="brand-logo">
                 <span class="brand-title">Kick Slot Wheel</span>
-                <span class="version-tag">v1.3.1</span>
+                <span class="version-tag">v1.3.2</span>
             </div>
         </div>
 
@@ -314,7 +314,7 @@
             </div>
             <div style="margin-top: 2rem;">
                 <button class="btn btn-primary"
-                    onclick="document.getElementById('winner-modal').classList.remove('active')">Close</button>
+                    onclick="const m = document.getElementById('winner-modal'); if(m){ m.classList.remove('active'); m.style.display='none'; }">Close</button>
             </div>
         </div>
     </div>

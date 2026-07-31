@@ -821,7 +821,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        winnerModal.classList.add('active');
+        if (winnerModal) {
+            winnerModal.style.display = 'flex';
+            winnerModal.classList.add('active');
+        }
         winnersArray.forEach(winner => addToHistory(winner));
     }
 
@@ -1272,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.3.1';
+        const CURRENT_VERSION = '1.3.2';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
@@ -1426,7 +1429,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close Modal Handler (Broadcasts modal dismissal to OBS overlay)
     function dismissWinnerModal() {
-        winnerModal.classList.remove('active');
+        if (winnerModal) {
+            winnerModal.classList.remove('active');
+            winnerModal.style.display = 'none';
+        }
         localStorage.setItem('kick_wheel_modal_active', 'false');
     }
 
