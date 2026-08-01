@@ -962,3 +962,43 @@ body.simple-graphics-mode .wheel-container {
   gap: 15px;
   z-index: 9999;
 }
+
+/* Hunter Detector Warning Badges & Buttons */
+.q-hunter-warn-btn {
+  background: rgba(255, 159, 0, 0.2);
+  border: 1px solid rgba(255, 159, 0, 0.5);
+  color: #FF9F00;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: transform 0.15 ease;
+}
+
+.q-hunter-warn-btn:hover {
+  transform: scale(1.15);
+  background: rgba(255, 159, 0, 0.35);
+}
+
+.hunter-winner-badge {
+  background: rgba(255, 159, 0, 0.18);
+  color: #FF9F00;
+  border: 1px solid rgba(255, 159, 0, 0.4);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.hunter-winner-badge:hover {
+  background: rgba(255, 159, 0, 0.3);
+  transform: translateY(-1px);
+}

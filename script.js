@@ -28,6 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const hubLogoInput = document.getElementById('hub-logo-input');
     const uploadLogoBtn = document.getElementById('upload-logo-btn');
     const hubLogoFile = document.getElementById('hub-logo-file');
+    const hunterDetectorToggle = document.getElementById('hunter-detector-toggle');
+    const hunterModal = document.getElementById('hunter-modal');
+    const hunterTargetUsername = document.getElementById('hunter-target-username');
+    const hunterReasonsList = document.getElementById('hunter-reasons-list');
+    const hunterChatSample = document.getElementById('hunter-chat-sample');
+    const approveHunterBtn = document.getElementById('approve-hunter-btn');
+    const removeHunterQueueBtn = document.getElementById('remove-hunter-queue-btn');
+    const closeHunterModalBtn = document.getElementById('close-hunter-modal-btn');
 
     // Modal Elements
     const winnerModal = document.getElementById('winner-modal');
@@ -44,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let isGoldSpinEnabled = false;
     let isSimpleGraphics = false;
     let isWeightedEntriesEnabled = true;
+    let isHunterDetectorEnabled = false;
+    let currentInspectedHunter = null;
+    const approvedHunters = new Set();
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -165,6 +176,129 @@ document.addEventListener('DOMContentLoaded', () => {
         if (months < 12) return `${months} month${months > 1 ? 's' : ''} (${days}d)`;
         const years = (days / 365).toFixed(1);
         return `${years} year${years !== '1.0' ? 's' : ''} (${days}d)`;
+    }
+
+    // --- Hunter Detector Analyzer ---
+    function analyzeUserForHunter(username) {
+        if (!username) return { isHunter: false, score: 0, reasons: [], userMessages: [] };
+
+        const lowerUser = username.toLowerCase();
+        const userMsgs = chatLogs.filter(m => m && m.username && m.username.toLowerCase() === lowerUser);
+
+        const reasons = [];
+        let score = 0;
+
+        if (userMsgs.length === 0) {
+            return { isHunter: false, score: 0, reasons: [], userMessages: [] };
+        }
+
+        let singleOrTwoWordCount = 0;
+        let totalWords = 0;
+        let keywordMsgCount = 0;
+        let beggingMsgCount = 0;
+
+        const giveawayKeywords = [
+            'giveaway', 'slotcall', 'slot', 'spin', 'win', 'pls', 'please', 'tip', 'tips', 
+            'vault', 'stake', 'code', 'free', 'money', 'claim', 'bonus', 'enter', 'rain', 'beg'
+        ];
+        const channelsSeen = new Set();
+
+        userMsgs.forEach(m => {
+            if (m.channel) channelsSeen.add(m.channel.toLowerCase());
+            const content = (m.content || '').trim();
+            const lowerContent = content.toLowerCase();
+            const words = content.split(/\s+/).filter(Boolean);
+            totalWords += words.length;
+
+            if (words.length <= 2) {
+                singleOrTwoWordCount++;
+            }
+
+            const containsKeyword = giveawayKeywords.some(kw => lowerContent.includes(kw)) || /^!([a-zA-Z0-9_-]+)/.test(content);
+            if (containsKeyword) {
+                keywordMsgCount++;
+            }
+
+            if (
+                lowerContent.includes('tip me') || 
+                lowerContent.includes('pls tip') || 
+                lowerContent.includes('please tip') || 
+                lowerContent.includes('send tip') || 
+                lowerContent.includes('vault code') ||
+                lowerContent.includes('need money') ||
+                lowerContent.includes('fill vault') ||
+                lowerContent.includes('tip pls')
+            ) {
+                beggingMsgCount++;
+            }
+        });
+
+        const shortMsgRatio = singleOrTwoWordCount / userMsgs.length;
+        const keywordMsgRatio = keywordMsgCount / userMsgs.length;
+
+        if (userMsgs.length >= 2 && shortMsgRatio >= 0.6) {
+            score += 35;
+            reasons.push(`High ratio of short 1-2 word messages (${Math.round(shortMsgRatio * 100)}% of chat history)`);
+        }
+
+        if (userMsgs.length >= 2 && keywordMsgRatio >= 0.5) {
+            score += 40;
+            reasons.push(`Over ${Math.round(keywordMsgRatio * 100)}% of messages consist of giveaway keywords or bot commands`);
+        }
+
+        if (beggingMsgCount > 0) {
+            score += 45;
+            reasons.push(`Contains tip request / begging phrases (${beggingMsgCount} message${beggingMsgCount > 1 ? 's' : ''})`);
+        }
+
+        if (channelsSeen.size > 1 && keywordMsgRatio >= 0.4) {
+            score += 30;
+            reasons.push(`Active across ${channelsSeen.size} different channel chats mainly entering giveaways`);
+        }
+
+        const isHunter = score >= 50;
+
+        return {
+            isHunter: isHunter,
+            score: score,
+            reasons: reasons,
+            userMessages: userMsgs
+        };
+    }
+
+    function showHunterModal(username, hunterInfo) {
+        currentInspectedHunter = username;
+        if (hunterTargetUsername) hunterTargetUsername.innerText = username;
+
+        if (hunterReasonsList) {
+            hunterReasonsList.innerHTML = '';
+            if (!hunterInfo.reasons || hunterInfo.reasons.length === 0) {
+                hunterReasonsList.innerHTML = '<li>High giveaway entry activity detected across streams.</li>';
+            } else {
+                hunterInfo.reasons.forEach(r => {
+                    const li = document.createElement('li');
+                    li.innerText = r;
+                    hunterReasonsList.appendChild(li);
+                });
+            }
+        }
+
+        if (hunterChatSample) {
+            if (!hunterInfo.userMessages || hunterInfo.userMessages.length === 0) {
+                hunterChatSample.innerHTML = '<div style="color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No recent chat messages logged for this user.</div>';
+            } else {
+                hunterChatSample.innerHTML = hunterInfo.userMessages.slice().reverse().map(m => `
+                    <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                        <span style="color: #eee; word-break: break-word; text-align: left;">"${m.content || ''}"</span>
+                        <span style="color: var(--text-secondary); white-space: nowrap; font-size: 0.75rem;">${m.channel ? `[${m.channel}] ` : ''}${formatTimeAgo(m.timestamp)}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        if (hunterModal) {
+            hunterModal.style.display = 'flex';
+        }
     }
 
     // --- Mode & Entries Toggle DOM Elements ---
@@ -414,6 +548,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (minWatchtimeInput) minWatchtimeInput.value = minWatchTimeHours;
     }
 
+    const savedHunterDetector = localStorage.getItem('kick_wheel_hunter_detector_enabled');
+    if (savedHunterDetector !== null) {
+        isHunterDetectorEnabled = savedHunterDetector === 'true';
+        if (hunterDetectorToggle) hunterDetectorToggle.checked = isHunterDetectorEnabled;
+    }
+
+    const savedApprovedHunters = localStorage.getItem('kick_wheel_approved_hunters');
+    if (savedApprovedHunters) {
+        try {
+            const parsed = JSON.parse(savedApprovedHunters);
+            if (Array.isArray(parsed)) {
+                parsed.forEach(u => approvedHunters.add(u.toLowerCase()));
+            }
+        } catch (e) {}
+    }
+
     updateEntriesUI();
     updateInstructionBanner();
 
@@ -489,23 +639,46 @@ document.addEventListener('DOMContentLoaded', () => {
         queue.forEach((user, index) => {
             const item = document.createElement('div');
             item.className = 'queue-item';
+
+            const lowerUser = (user.username || '').toLowerCase();
+            const isApproved = approvedHunters.has(lowerUser);
+
+            let hunterBtnHtml = '';
+            if (isHunterDetectorEnabled && !isApproved) {
+                const hInfo = analyzeUserForHunter(user.username);
+                if (hInfo.isHunter) {
+                    hunterBtnHtml = `<button class="q-hunter-warn-btn" title="Hunter Detected! Click to inspect">⚠️</button>`;
+                }
+            }
+
             const weightBadge = (user.weight && user.weight > 1) 
                 ? `<span style="background: rgba(83,252,24,0.2); color: var(--kick-green); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 6px;">${user.weight}x</span>` 
                 : '';
+
             item.innerHTML = `
                 <div class="q-info">
-                    <span class="q-name">${user.username}${weightBadge}</span>
+                    <span class="q-name">${user.username}${weightBadge}${hunterBtnHtml}</span>
                     <span class="q-slot">${user.slot_name}</span>
                 </div>
                 <button class="q-delete-btn" title="Remove from queue">✕</button>
             `;
             
-            // Add click handler for delete button
+            const hunterBtn = item.querySelector('.q-hunter-warn-btn');
+            if (hunterBtn) {
+                hunterBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const hInfo = analyzeUserForHunter(user.username);
+                    showHunterModal(user.username, hInfo);
+                });
+            }
+
             const deleteBtn = item.querySelector('.q-delete-btn');
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                removeFromQueue(index);
-            });
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFromQueue(index);
+                });
+            }
             
             queueContainer.appendChild(item);
         });
@@ -752,11 +925,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `<div class="gold-winner-badge">🌟 Gold Spin Underdog Winner!</div>` 
                     : '';
 
+                const lowerUser = (winner.username || '').toLowerCase();
+                const isApproved = approvedHunters.has(lowerUser);
+
+                let hunterBadgeHtml = '';
+                if (isHunterDetectorEnabled && !isApproved) {
+                    const hInfo = analyzeUserForHunter(winner.username);
+                    if (hInfo.isHunter) {
+                        hunterBadgeHtml = `
+                            <div class="hunter-winner-badge" title="Click to inspect hunter analysis">
+                                <span>⚠️</span> Hunter / Farmer Detected (Click to Inspect)
+                            </div>
+                        `;
+                    }
+                }
+
                 card.innerHTML = `
                     <div class="winner-avatar-circle" style="border-color: ${winnerColor};">
                         ${avatarContentHtml}
                     </div>
                     ${goldBadgeHtml}
+                    ${hunterBadgeHtml}
                     <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: ${winner.isGoldWinner ? '#FFD700' : 'var(--kick-green)'}; margin-bottom: 0.3rem;">${winner.username}</div>
                     <div class="winner-slot" style="font-size: 0.95rem; color: #fff; background: rgba(255, 255, 255, 0.1); padding: 0.3rem 0.8rem; border-radius: 50px; display: inline-block;">${winner.slot_name || winner.username}</div>
                     
@@ -781,6 +970,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 `;
+
+                const hunterBadge = card.querySelector('.hunter-winner-badge');
+                if (hunterBadge) {
+                    hunterBadge.addEventListener('click', () => {
+                        const hInfo = analyzeUserForHunter(winner.username);
+                        showHunterModal(winner.username, hInfo);
+                    });
+                }
+
                 container.appendChild(card);
 
                 // Async fetch follow info
@@ -1167,6 +1365,57 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Hunter Detector Toggle & Modal Controls
+        if (hunterDetectorToggle) {
+            hunterDetectorToggle.addEventListener('change', () => {
+                isHunterDetectorEnabled = hunterDetectorToggle.checked;
+                localStorage.setItem('kick_wheel_hunter_detector_enabled', isHunterDetectorEnabled ? 'true' : 'false');
+                updateQueueUI();
+            });
+        }
+
+        if (approveHunterBtn) {
+            approveHunterBtn.addEventListener('click', () => {
+                if (currentInspectedHunter) {
+                    approvedHunters.add(currentInspectedHunter.toLowerCase());
+                    localStorage.setItem('kick_wheel_approved_hunters', JSON.stringify([...approvedHunters]));
+                    if (hunterModal) hunterModal.style.display = 'none';
+                    updateQueueUI();
+                    if (winnerModal && winnerModal.style.display === 'flex') {
+                        // Re-trigger showWinners if winner modal is visible to clear warning badge
+                        const currentWinners = Array.from(document.querySelectorAll('.winner-name')).map(el => ({ username: el.innerText, slot_name: '' }));
+                        if (currentWinners.length > 0) showWinners(currentWinners);
+                    }
+                }
+            });
+        }
+
+        if (removeHunterQueueBtn) {
+            removeHunterQueueBtn.addEventListener('click', () => {
+                if (currentInspectedHunter) {
+                    const idx = queue.findIndex(u => u.username.toLowerCase() === currentInspectedHunter.toLowerCase());
+                    if (idx !== -1) {
+                        removeFromQueue(idx);
+                    }
+                    if (hunterModal) hunterModal.style.display = 'none';
+                }
+            });
+        }
+
+        if (closeHunterModalBtn && hunterModal) {
+            closeHunterModalBtn.addEventListener('click', () => {
+                hunterModal.style.display = 'none';
+            });
+        }
+
+        if (hunterModal) {
+            hunterModal.addEventListener('click', (e) => {
+                if (e.target === hunterModal) {
+                    hunterModal.style.display = 'none';
+                }
+            });
+        }
+
         // Wheel Count Selector
         if (wheelCountSelect) {
             wheelCountSelect.addEventListener('change', () => {
@@ -1282,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.3.5';
+        const CURRENT_VERSION = '1.4.0';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
