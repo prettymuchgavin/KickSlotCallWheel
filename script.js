@@ -1531,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.4.0';
+        const CURRENT_VERSION = '1.4.1';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
