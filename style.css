@@ -780,17 +780,40 @@ canvas.wheel-canvas {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .winner-card {
   background: var(--bg-dark);
   border: 3px solid var(--kick-green);
-  padding: 2.2rem;
+  padding: 1.5rem 1.8rem;
   border-radius: 20px;
   box-shadow: 0 0 60px var(--kick-green-glow);
-  max-width: 520px;
-  width: 90%;
+  max-width: 540px;
+  width: 94%;
+  max-height: 90vh;
+  overflow-y: auto;
   text-align: center;
+  transition: max-width 0.25s ease;
+}
+
+.winner-card.multi-winner-card {
+  max-width: 96vw;
+}
+
+/* Compact Hunter Inspection Overlay (Higher z-index so it opens OVER winner modal without closing it) */
+#hunter-modal {
+  z-index: 2000 !important;
+}
+
+#hunter-modal .modal-card {
+  max-width: 440px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-color: #FF9F00;
+  box-shadow: 0 0 50px rgba(255, 159, 0, 0.5);
+  padding: 1.2rem 1.4rem;
 }
 
 .winner-text {

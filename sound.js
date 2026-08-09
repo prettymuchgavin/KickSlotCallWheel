@@ -7,6 +7,7 @@ class SoundFX {
     constructor() {
         this.ctx = null;
         this.enabled = true;
+        this.lastVictoryTime = 0;
     }
 
     init() {
@@ -47,6 +48,14 @@ class SoundFX {
 
     playVictory() {
         if (!this.enabled) return;
+
+        // Prevent victory sound from playing over itself 5 times when multi-wheels finish
+        const now = Date.now();
+        if (this.lastVictoryTime && (now - this.lastVictoryTime < 2500)) {
+            return;
+        }
+        this.lastVictoryTime = now;
+
         this.init();
         if (!this.ctx) return;
 
@@ -71,6 +80,10 @@ class SoundFX {
                 osc.stop(startTime + 0.4);
             });
         } catch (e) {}
+    }
+
+    playWin() {
+        this.playVictory();
     }
 }
 

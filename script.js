@@ -1094,9 +1094,20 @@ ${formattedLogs || 'No chat history logged.'}`;
             winnerModal.style.display = 'flex';
         }
 
+        const winnerCardEl = document.querySelector('.winner-card');
+        if (winnerCardEl) {
+            if (winnersArray.length > 1) {
+                winnerCardEl.classList.add('multi-winner-card');
+            } else {
+                winnerCardEl.classList.remove('multi-winner-card');
+            }
+        }
+
         if (modalTitle) {
             modalTitle.innerText = winnersArray.length > 1 ? `Winners (${winnersArray.length})!` : 'Winner!';
         }
+
+        const isMulti = winnersArray.length > 1;
 
         container.innerHTML = '';
         winnersArray.forEach(winner => {
@@ -1107,11 +1118,11 @@ ${formattedLogs || 'No chat history logged.'}`;
                 card.className = 'winner-card-item';
                 card.style.textAlign = 'center';
                 card.style.background = 'rgba(255, 255, 255, 0.05)';
-                card.style.padding = '1.2rem 1.5rem';
+                card.style.padding = isMulti ? '0.9rem 1.1rem' : '1.2rem 1.5rem';
                 card.style.borderRadius = '14px';
                 card.style.border = '1px solid rgba(83, 252, 24, 0.3)';
-                card.style.minWidth = '260px';
-                card.style.maxWidth = '340px';
+                card.style.minWidth = isMulti ? (winnersArray.length > 3 ? '210px' : '235px') : '260px';
+                card.style.maxWidth = isMulti ? (winnersArray.length > 3 ? '270px' : '310px') : '340px';
 
                 const activeChannel = (connectedUsername || localStorage.getItem('kick_wheel_username') || '').toLowerCase();
                 const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
@@ -1700,10 +1711,18 @@ ${formattedLogs || 'No chat history logged.'}`;
                     localStorage.setItem('kick_wheel_approved_hunters', JSON.stringify([...approvedHunters]));
                     if (hunterModal) hunterModal.style.display = 'none';
                     updateQueueUI();
-                    if (winnerModal && winnerModal.style.display === 'flex') {
-                        const currentWinners = Array.from(document.querySelectorAll('.winner-name')).map(el => ({ username: el.innerText, slot_name: '' }));
-                        if (currentWinners.length > 0) showWinners(currentWinners);
-                    }
+
+                    // Remove warning badge live from active winner card without re-rendering
+                    const activeBadges = document.querySelectorAll('.hunter-winner-badge');
+                    activeBadges.forEach(b => {
+                        const cardParent = b.closest('.winner-card-item');
+                        if (cardParent) {
+                            const nameEl = cardParent.querySelector('.winner-name');
+                            if (nameEl && nameEl.innerText.toLowerCase() === currentInspectedHunter.toLowerCase()) {
+                                b.remove();
+                            }
+                        }
+                    });
                 }
             });
         }
@@ -1849,7 +1868,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.5.1';
+        const CURRENT_VERSION = '1.5.2';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
