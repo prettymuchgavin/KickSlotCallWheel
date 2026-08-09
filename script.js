@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const subWeightSelect = document.getElementById('sub-weight-select');
     const hubLogoInput = document.getElementById('hub-logo-input');
     const uploadLogoBtn = document.getElementById('upload-logo-btn');
+    const hubLogoFile = document.getElementById('hub-logo-file');
     const hunterDetectorToggle = document.getElementById('hunter-detector-toggle');
     const hunterDetectorOptions = document.getElementById('hunter-detector-options');
     const hunterAiToggle = document.getElementById('hunter-ai-toggle');
@@ -1848,7 +1849,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.5.0';
+        const CURRENT_VERSION = '1.5.1';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
