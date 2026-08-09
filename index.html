@@ -26,7 +26,7 @@
         <div class="header-left">
             <div class="brand-logo">
                 <span class="brand-title">Kick Slot Wheel</span>
-                <span class="version-tag">v1.4.1</span>
+                <span class="version-tag">v1.5.0</span>
             </div>
         </div>
 
@@ -157,6 +157,46 @@
                             <input type="checkbox" id="hunter-detector-toggle">
                             <span class="slider round"></span>
                         </label>
+                    </div>
+
+                    <div id="hunter-detector-options" style="display: none; margin-top: 10px; background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 10px; border: var(--glass-border);">
+                        <div class="setting-item">
+                            <div>
+                                <div class="setting-label" style="color: #00F0FF; font-size: 0.82rem;">🤖 AI Advanced Mode</div>
+                                <div class="setting-desc">Use AI (OpenAI / OpenRouter / Claude / Ollama) to analyze chat history</div>
+                            </div>
+                            <label class="switch" style="transform: scale(0.85);">
+                                <input type="checkbox" id="hunter-ai-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div id="hunter-ai-settings-container" style="display: none; margin-top: 10px; padding-top: 10px; border-top: var(--glass-border);">
+                            <label for="ai-provider-select" style="font-size: 0.78rem; margin-bottom: 4px; display: block; font-weight: 600;">AI Provider</label>
+                            <select id="ai-provider-select" style="width: 100%; padding: 0.5rem 0.7rem; border-radius: 8px; background: rgba(0,0,0,0.5); color: #fff; border: var(--glass-border); font-size: 0.82rem; margin-bottom: 8px; outline: none; font-weight: 600;">
+                                <option value="openrouter">OpenRouter (Recommended - Multi-Model)</option>
+                                <option value="openai">OpenAI (ChatGPT API)</option>
+                                <option value="anthropic">Anthropic (Claude API)</option>
+                                <option value="custom">Custom / Ollama Cloud API</option>
+                            </select>
+
+                            <label for="ai-api-key-input" style="font-size: 0.78rem; margin-bottom: 4px; display: block; font-weight: 600;">API Key</label>
+                            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                                <input type="password" id="ai-api-key-input" placeholder="sk-or-v1-..." style="flex: 1; padding: 0.5rem 0.7rem; font-size: 0.82rem;">
+                                <button type="button" id="toggle-api-key-vis" style="padding: 0.4rem 0.7rem; font-size: 0.75rem; background: rgba(255,255,255,0.1); border: var(--glass-border); color: #ccc; border-radius: 6px; cursor: pointer;">👁️</button>
+                            </div>
+
+                            <label for="ai-model-input" style="font-size: 0.78rem; margin-bottom: 4px; display: block; font-weight: 600;">AI Model Name</label>
+                            <input type="text" id="ai-model-input" placeholder="e.g. openai/gpt-4o-mini" value="openai/gpt-4o-mini" style="padding: 0.5rem 0.7rem; font-size: 0.82rem; margin-bottom: 8px;">
+
+                            <div id="custom-endpoint-box" style="display: none;">
+                                <label for="ai-endpoint-input" style="font-size: 0.78rem; margin-bottom: 4px; display: block; font-weight: 600;">API Endpoint URL</label>
+                                <input type="text" id="ai-endpoint-input" placeholder="https://api.your-ollama-cloud.com/v1/chat/completions" style="padding: 0.5rem 0.7rem; font-size: 0.82rem; margin-bottom: 8px;">
+                            </div>
+
+                            <button type="button" id="test-ai-key-btn" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.45rem; border-radius: 6px;">🧪 Test AI Connection</button>
+                            <div id="ai-test-result" style="font-size: 0.75rem; margin-top: 6px; display: none;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -379,6 +419,19 @@
                 </div>
                 <div id="hunter-chat-sample" class="winner-chat-history">
                     <!-- Dynamically injected chat logs -->
+                </div>
+
+                <div id="ai-hunter-analysis-box" style="display: none; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 10px; padding: 0.8rem; margin-top: 0.8rem; text-align: left;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #00F0FF; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <span>🤖 AI Hunter Deep Analysis</span>
+                        <span id="ai-hunter-status-badge" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(0, 240, 255, 0.2); color: #00F0FF;">Ready</span>
+                    </div>
+                    <div id="ai-hunter-explanation" style="font-size: 0.78rem; color: #eee; line-height: 1.4;">
+                        Click below to run AI analysis on this user's recent chat logs.
+                    </div>
+                    <button type="button" id="run-ai-analysis-btn" class="btn" style="margin-top: 8px; font-size: 0.75rem; padding: 0.4rem 0.8rem; background: rgba(0, 240, 255, 0.2); color: #00F0FF; border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 6px; cursor: pointer; font-weight: 700; width: auto;">
+                        ✨ Run AI Deep Analysis
+                    </button>
                 </div>
             </div>
 

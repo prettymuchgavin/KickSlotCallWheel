@@ -27,8 +27,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const subWeightSelect = document.getElementById('sub-weight-select');
     const hubLogoInput = document.getElementById('hub-logo-input');
     const uploadLogoBtn = document.getElementById('upload-logo-btn');
-    const hubLogoFile = document.getElementById('hub-logo-file');
     const hunterDetectorToggle = document.getElementById('hunter-detector-toggle');
+    const hunterDetectorOptions = document.getElementById('hunter-detector-options');
+    const hunterAiToggle = document.getElementById('hunter-ai-toggle');
+    const hunterAiSettingsContainer = document.getElementById('hunter-ai-settings-container');
+    const aiProviderSelect = document.getElementById('ai-provider-select');
+    const aiApiKeyInput = document.getElementById('ai-api-key-input');
+    const toggleApiKeyVis = document.getElementById('toggle-api-key-vis');
+    const aiModelInput = document.getElementById('ai-model-input');
+    const customEndpointBox = document.getElementById('custom-endpoint-box');
+    const aiEndpointInput = document.getElementById('ai-endpoint-input');
+    const testAiKeyBtn = document.getElementById('test-ai-key-btn');
+    const aiTestResult = document.getElementById('ai-test-result');
+
     const hunterModal = document.getElementById('hunter-modal');
     const hunterTargetUsername = document.getElementById('hunter-target-username');
     const hunterReasonsList = document.getElementById('hunter-reasons-list');
@@ -36,6 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const approveHunterBtn = document.getElementById('approve-hunter-btn');
     const removeHunterQueueBtn = document.getElementById('remove-hunter-queue-btn');
     const closeHunterModalBtn = document.getElementById('close-hunter-modal-btn');
+    const aiHunterAnalysisBox = document.getElementById('ai-hunter-analysis-box');
+    const aiHunterStatusBadge = document.getElementById('ai-hunter-status-badge');
+    const aiHunterExplanation = document.getElementById('ai-hunter-explanation');
+    const runAiAnalysisBtn = document.getElementById('run-ai-analysis-btn');
 
     // Modal Elements
     const winnerModal = document.getElementById('winner-modal');
@@ -53,8 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSimpleGraphics = false;
     let isWeightedEntriesEnabled = true;
     let isHunterDetectorEnabled = false;
+    let isAiHunterEnabled = false;
+    let aiProvider = 'openrouter';
+    let aiApiKey = '';
+    let aiModel = 'openai/gpt-4o-mini';
+    let aiEndpoint = '';
     let currentInspectedHunter = null;
     const approvedHunters = new Set();
+    const aiCache = new Map();
 
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
@@ -179,11 +200,132 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Hunter Detector Analyzer ---
+    async function fetchAiAnalysis(username, userMessages) {
+        if (!aiApiKey) {
+            throw new Error("Missing AI API Key. Configure it in Settings -> Rules -> Hunter Detector.");
+        }
+
+        const lowerUser = username.toLowerCase();
+        if (aiCache.has(lowerUser)) {
+            return aiCache.get(lowerUser);
+        }
+
+        let endpointUrl = '';
+        const headers = { 'Content-Type': 'application/json' };
+        let selectedModel = (aiModel || '').trim() || 'openai/gpt-4o-mini';
+
+        if (aiProvider === 'openrouter') {
+            endpointUrl = 'https://openrouter.ai/api/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${aiApiKey.trim()}`;
+            headers['HTTP-Referer'] = 'https://kickslotwheel.app';
+            headers['X-Title'] = 'Kick Slot Wheel Hunter Detector';
+        } else if (aiProvider === 'openai') {
+            endpointUrl = 'https://api.openai.com/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${aiApiKey.trim()}`;
+            if (!selectedModel || selectedModel.includes('/')) selectedModel = 'gpt-4o-mini';
+        } else if (aiProvider === 'anthropic') {
+            endpointUrl = 'https://api.anthropic.com/v1/messages';
+            headers['x-api-key'] = aiApiKey.trim();
+            headers['anthropic-version'] = '2023-06-01';
+            headers['dangerously-allow-browser'] = 'true';
+            if (!selectedModel || selectedModel.includes('/')) selectedModel = 'claude-3-5-haiku-20241022';
+        } else {
+            endpointUrl = (aiEndpoint || '').trim() || 'http://localhost:11434/v1/chat/completions';
+            if (aiApiKey.trim()) headers['Authorization'] = `Bearer ${aiApiKey.trim()}`;
+        }
+
+        const formattedLogs = (userMessages || []).slice(-15).map(m => {
+            const chan = m.channel ? `[Channel: ${m.channel}] ` : '';
+            return `${chan}"${m.content || ''}" (${formatTimeAgo(m.timestamp)})`;
+        }).join('\n');
+
+        const systemPrompt = `You are a Kick stream moderation AI analyzer. Evaluate the viewer's 48-hour chat logs.
+Determine if they are a "giveaway hunter/farmer/bot" (chats ONLY to enter giveaways, beg for tips, or spam commands like !slotcall/!giveaway/win/pls tip, with zero organic chat interaction).
+
+Respond ONLY with valid JSON:
+{"isHunter": boolean, "confidence": number, "reason": "Short 1-2 sentence explanation"}`;
+
+        const userPrompt = `Viewer Username: "${username}"
+Chat Logs:
+${formattedLogs || 'No chat history logged.'}`;
+
+        let requestBody = {};
+        if (aiProvider === 'anthropic') {
+            requestBody = {
+                model: selectedModel,
+                max_tokens: 300,
+                system: systemPrompt,
+                messages: [{ role: 'user', content: userPrompt }]
+            };
+        } else {
+            requestBody = {
+                model: selectedModel,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.1,
+                max_tokens: 250
+            };
+        }
+
+        const response = await fetch(endpointUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`API Error (${response.status}): ${errText.slice(0, 120)}`);
+        }
+
+        const data = await response.json();
+        let rawContent = '';
+        if (aiProvider === 'anthropic' && data.content && data.content[0]) {
+            rawContent = data.content[0].text;
+        } else if (data.choices && data.choices[0] && data.choices[0].message) {
+            rawContent = data.choices[0].message.content;
+        }
+
+        let parsed = null;
+        try {
+            const cleanJson = rawContent.replace(/```json|```/g, '').trim();
+            parsed = JSON.parse(cleanJson);
+        } catch (e) {
+            parsed = {
+                isHunter: /"isHunter"\s*:\s*true/i.test(rawContent) || /hunter/i.test(rawContent),
+                confidence: 75,
+                reason: rawContent.slice(0, 150)
+            };
+        }
+
+        const result = {
+            isHunter: Boolean(parsed.isHunter),
+            confidence: parsed.confidence || 80,
+            reason: parsed.reason || 'AI analyzed chat patterns and evaluated hunter behavior.'
+        };
+
+        aiCache.set(lowerUser, result);
+        return result;
+    }
+
     function analyzeUserForHunter(username) {
         if (!username) return { isHunter: false, score: 0, reasons: [], userMessages: [] };
 
         const lowerUser = username.toLowerCase();
         const userMsgs = chatLogs.filter(m => m && m.username && m.username.toLowerCase() === lowerUser);
+
+        // Check if AI analysis cache has a result for this user
+        if (isAiHunterEnabled && aiCache.has(lowerUser)) {
+            const aiRes = aiCache.get(lowerUser);
+            return {
+                isHunter: aiRes.isHunter,
+                score: aiRes.isHunter ? 90 : 10,
+                reasons: [`[AI ${aiProvider.toUpperCase()}] ${aiRes.reason}`],
+                userMessages: userMsgs
+            };
+        }
 
         const reasons = [];
         let score = 0;
@@ -296,8 +438,63 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        if (aiHunterAnalysisBox) {
+            if (isAiHunterEnabled) {
+                aiHunterAnalysisBox.style.display = 'block';
+                const lowerUser = username.toLowerCase();
+                if (aiCache.has(lowerUser)) {
+                    const cached = aiCache.get(lowerUser);
+                    if (aiHunterStatusBadge) {
+                        aiHunterStatusBadge.innerText = cached.isHunter ? `⚠️ Flagged (${cached.confidence}% Conf)` : `✅ Clear (${cached.confidence}% Conf)`;
+                        aiHunterStatusBadge.style.background = cached.isHunter ? 'rgba(255, 159, 0, 0.2)' : 'rgba(83, 252, 24, 0.2)';
+                        aiHunterStatusBadge.style.color = cached.isHunter ? '#FF9F00' : 'var(--kick-green)';
+                    }
+                    if (aiHunterExplanation) {
+                        aiHunterExplanation.innerHTML = `<strong>AI Analysis (${aiProvider.toUpperCase()}):</strong> ${cached.reason}`;
+                    }
+                } else {
+                    if (aiHunterStatusBadge) {
+                        aiHunterStatusBadge.innerText = 'Ready';
+                        aiHunterStatusBadge.style.background = 'rgba(0, 240, 255, 0.2)';
+                        aiHunterStatusBadge.style.color = '#00F0FF';
+                    }
+                    if (aiHunterExplanation) {
+                        aiHunterExplanation.innerText = 'Click below to run AI analysis on this user\'s recent chat logs.';
+                    }
+                    if (aiApiKey) {
+                        triggerAiModalAnalysis(username, hunterInfo.userMessages);
+                    }
+                }
+            } else {
+                aiHunterAnalysisBox.style.display = 'none';
+            }
+        }
+
         if (hunterModal) {
             hunterModal.style.display = 'flex';
+        }
+    }
+
+    async function triggerAiModalAnalysis(username, userMessages) {
+        if (!aiHunterStatusBadge || !aiHunterExplanation) return;
+        aiHunterStatusBadge.innerText = 'Analyzing...';
+        aiHunterStatusBadge.style.background = 'rgba(0, 240, 255, 0.2)';
+        aiHunterStatusBadge.style.color = '#00F0FF';
+        aiHunterExplanation.innerText = '⏳ AI is reading and analyzing chat history...';
+
+        try {
+            const result = await fetchAiAnalysis(username, userMessages);
+            aiHunterStatusBadge.innerText = result.isHunter ? `⚠️ Flagged (${result.confidence}% Conf)` : `✅ Clear (${result.confidence}% Conf)`;
+            aiHunterStatusBadge.style.background = result.isHunter ? 'rgba(255, 159, 0, 0.2)' : 'rgba(83, 252, 24, 0.2)';
+            aiHunterStatusBadge.style.color = result.isHunter ? '#FF9F00' : 'var(--kick-green)';
+            aiHunterExplanation.innerHTML = `<strong>AI Analysis (${aiProvider.toUpperCase()}):</strong> ${result.reason}`;
+
+            updateQueueUI();
+        } catch (err) {
+            aiHunterStatusBadge.innerText = 'Error';
+            aiHunterStatusBadge.style.background = 'rgba(255, 59, 48, 0.2)';
+            aiHunterStatusBadge.style.color = '#ff4d4d';
+            aiHunterExplanation.innerHTML = `<span style="color: #ff4d4d;">❌ ${err.message}</span>`;
         }
     }
 
@@ -552,6 +749,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedHunterDetector !== null) {
         isHunterDetectorEnabled = savedHunterDetector === 'true';
         if (hunterDetectorToggle) hunterDetectorToggle.checked = isHunterDetectorEnabled;
+        if (hunterDetectorOptions) hunterDetectorOptions.style.display = isHunterDetectorEnabled ? 'block' : 'none';
+    }
+
+    const savedAiHunter = localStorage.getItem('kick_wheel_hunter_ai_enabled');
+    if (savedAiHunter !== null) {
+        isAiHunterEnabled = savedAiHunter === 'true';
+        if (hunterAiToggle) hunterAiToggle.checked = isAiHunterEnabled;
+        if (hunterAiSettingsContainer) hunterAiSettingsContainer.style.display = isAiHunterEnabled ? 'block' : 'none';
+    }
+
+    const savedAiProvider = localStorage.getItem('kick_wheel_ai_provider');
+    if (savedAiProvider) {
+        aiProvider = savedAiProvider;
+        if (aiProviderSelect) aiProviderSelect.value = aiProvider;
+        if (customEndpointBox) customEndpointBox.style.display = aiProvider === 'custom' ? 'block' : 'none';
+    }
+
+    const savedAiApiKey = localStorage.getItem('kick_wheel_ai_api_key');
+    if (savedAiApiKey) {
+        aiApiKey = savedAiApiKey;
+        if (aiApiKeyInput) aiApiKeyInput.value = aiApiKey;
+    }
+
+    const savedAiModel = localStorage.getItem('kick_wheel_ai_model');
+    if (savedAiModel) {
+        aiModel = savedAiModel;
+        if (aiModelInput) aiModelInput.value = aiModel;
+    }
+
+    const savedAiEndpoint = localStorage.getItem('kick_wheel_ai_endpoint');
+    if (savedAiEndpoint) {
+        aiEndpoint = savedAiEndpoint;
+        if (aiEndpointInput) aiEndpointInput.value = aiEndpoint;
     }
 
     const savedApprovedHunters = localStorage.getItem('kick_wheel_approved_hunters');
@@ -1370,7 +1600,95 @@ document.addEventListener('DOMContentLoaded', () => {
             hunterDetectorToggle.addEventListener('change', () => {
                 isHunterDetectorEnabled = hunterDetectorToggle.checked;
                 localStorage.setItem('kick_wheel_hunter_detector_enabled', isHunterDetectorEnabled ? 'true' : 'false');
+                if (hunterDetectorOptions) hunterDetectorOptions.style.display = isHunterDetectorEnabled ? 'block' : 'none';
                 updateQueueUI();
+            });
+        }
+
+        if (hunterAiToggle) {
+            hunterAiToggle.addEventListener('change', () => {
+                isAiHunterEnabled = hunterAiToggle.checked;
+                localStorage.setItem('kick_wheel_hunter_ai_enabled', isAiHunterEnabled ? 'true' : 'false');
+                if (hunterAiSettingsContainer) hunterAiSettingsContainer.style.display = isAiHunterEnabled ? 'block' : 'none';
+                updateQueueUI();
+            });
+        }
+
+        if (aiProviderSelect) {
+            aiProviderSelect.addEventListener('change', () => {
+                aiProvider = aiProviderSelect.value;
+                localStorage.setItem('kick_wheel_ai_provider', aiProvider);
+                if (customEndpointBox) customEndpointBox.style.display = aiProvider === 'custom' ? 'block' : 'none';
+
+                if (aiModelInput) {
+                    if (aiProvider === 'openai') aiModelInput.value = 'gpt-4o-mini';
+                    else if (aiProvider === 'anthropic') aiModelInput.value = 'claude-3-5-haiku-20241022';
+                    else if (aiProvider === 'openrouter') aiModelInput.value = 'openai/gpt-4o-mini';
+                    else if (aiProvider === 'custom') aiModelInput.value = 'llama3';
+                    aiModel = aiModelInput.value;
+                    localStorage.setItem('kick_wheel_ai_model', aiModel);
+                }
+            });
+        }
+
+        if (aiApiKeyInput) {
+            aiApiKeyInput.addEventListener('input', () => {
+                aiApiKey = aiApiKeyInput.value.trim();
+                localStorage.setItem('kick_wheel_ai_api_key', aiApiKey);
+            });
+        }
+
+        if (toggleApiKeyVis && aiApiKeyInput) {
+            toggleApiKeyVis.addEventListener('click', () => {
+                const isPass = aiApiKeyInput.type === 'password';
+                aiApiKeyInput.type = isPass ? 'text' : 'password';
+                toggleApiKeyVis.innerText = isPass ? '🔒' : '👁️';
+            });
+        }
+
+        if (aiModelInput) {
+            aiModelInput.addEventListener('input', () => {
+                aiModel = aiModelInput.value.trim();
+                localStorage.setItem('kick_wheel_ai_model', aiModel);
+            });
+        }
+
+        if (aiEndpointInput) {
+            aiEndpointInput.addEventListener('input', () => {
+                aiEndpoint = aiEndpointInput.value.trim();
+                localStorage.setItem('kick_wheel_ai_endpoint', aiEndpoint);
+            });
+        }
+
+        if (testAiKeyBtn) {
+            testAiKeyBtn.addEventListener('click', async () => {
+                if (!aiTestResult) return;
+                aiTestResult.style.display = 'block';
+                aiTestResult.style.color = '#00F0FF';
+                aiTestResult.innerText = '⏳ Testing AI API connection...';
+
+                const dummyLogs = [
+                    { content: '!giveaway', timestamp: Date.now() - 30000, channel: 'testchannel' },
+                    { content: 'pls tip me vault code', timestamp: Date.now() - 10000, channel: 'testchannel' }
+                ];
+
+                try {
+                    const res = await fetchAiAnalysis('TestUser123', dummyLogs);
+                    aiTestResult.style.color = 'var(--kick-green)';
+                    aiTestResult.innerHTML = `✅ AI Connection Successful! Result: ${res.isHunter ? 'Flagged' : 'Clear'} (${res.confidence}% Conf)`;
+                } catch (e) {
+                    aiTestResult.style.color = '#ff4d4d';
+                    aiTestResult.innerHTML = `❌ Connection Failed: ${e.message}`;
+                }
+            });
+        }
+
+        if (runAiAnalysisBtn) {
+            runAiAnalysisBtn.addEventListener('click', () => {
+                if (currentInspectedHunter) {
+                    const userMsgs = chatLogs.filter(m => m && m.username && m.username.toLowerCase() === currentInspectedHunter.toLowerCase());
+                    triggerAiModalAnalysis(currentInspectedHunter, userMsgs);
+                }
             });
         }
 
@@ -1382,7 +1700,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (hunterModal) hunterModal.style.display = 'none';
                     updateQueueUI();
                     if (winnerModal && winnerModal.style.display === 'flex') {
-                        // Re-trigger showWinners if winner modal is visible to clear warning badge
                         const currentWinners = Array.from(document.querySelectorAll('.winner-name')).map(el => ({ username: el.innerText, slot_name: '' }));
                         if (currentWinners.length > 0) showWinners(currentWinners);
                     }
@@ -1531,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.4.1';
+        const CURRENT_VERSION = '1.5.0';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
