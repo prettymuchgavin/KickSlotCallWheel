@@ -1,0 +1,12 @@
+# Global Scammer & Fraud Ban List for Kick Slot Wheel
+# Users listed here are reported scammers and are automatically blocked from wheel entries
+kickscammer99
+fakegavin_mod
+kick_scambot_v1
+free_stake_vault_scam
+kick_tip_farmer_bot
+kick_vault_scammer
+stream_beggar_bot
+kick_crypto_scammer
+vault_code_phisher
+kick_bonus_farmer

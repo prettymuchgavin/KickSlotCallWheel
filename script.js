@@ -78,6 +78,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const approvedHunters = new Set();
     const aiCache = new Map();
 
+    // Global Scammer Ban List State
+    const globalBanList = new Set();
+    const banlistCountBadge = document.getElementById('banlist-count-badge');
+    const scammerBlockedBanner = document.getElementById('scammer-blocked-banner');
+    const scammerBlockedName = document.getElementById('scammer-blocked-name');
+    const dismissScammerBannerBtn = document.getElementById('dismiss-scammer-banner-btn');
+
+    async function loadGlobalBanList() {
+        try {
+            const response = await fetch(`banned_users.txt?t=${Date.now()}`);
+            if (!response.ok) return;
+            const text = await response.text();
+            const lines = text.split('\n');
+            globalBanList.clear();
+            lines.forEach(line => {
+                const trimmed = line.trim().toLowerCase();
+                if (trimmed && !trimmed.startsWith('#')) {
+                    globalBanList.add(trimmed);
+                }
+            });
+            console.log(`Global Scammer Ban List loaded: ${globalBanList.size} accounts blocked.`);
+            if (banlistCountBadge) {
+                banlistCountBadge.innerText = `${globalBanList.size} Accounts Blocked`;
+            }
+        } catch (err) {
+            console.warn('Failed to load global ban list:', err);
+            if (banlistCountBadge) {
+                banlistCountBadge.innerText = 'Active (Offline)';
+            }
+        }
+    }
+    loadGlobalBanList();
+
+    function showBannedUserNotification(username) {
+        if (scammerBlockedBanner && scammerBlockedName) {
+            scammerBlockedName.innerText = username;
+            scammerBlockedBanner.style.display = 'flex';
+            setTimeout(() => {
+                if (scammerBlockedBanner) scammerBlockedBanner.style.display = 'none';
+            }, 6000);
+        }
+    }
+
     // Curated Neon Color Palette
     const GLOWING_COLORS = [
         '#53FC18', // Kick Green
@@ -835,8 +878,19 @@ ${formattedLogs || 'No chat history logged.'}`;
     // --- UI Functions ---
 
     function addToQueue(user) {
+        if (!user || !user.username) return;
+
+        const lowerUsername = user.username.toLowerCase();
+
+        // 🛑 GLOBAL SCAMMER BAN LIST VERIFICATION
+        if (globalBanList.has(lowerUsername)) {
+            console.warn(`User ${user.username} is listed on the Global Scammer Ban List. Entry blocked.`);
+            showBannedUserNotification(user.username);
+            return;
+        }
+
         // Case-insensitive check to be safe
-        const existingIndex = queue.findIndex(u => u.username.toLowerCase() === user.username.toLowerCase());
+        const existingIndex = queue.findIndex(u => u.username.toLowerCase() === lowerUsername);
 
         if (existingIndex !== -1) {
             console.log(`User ${user.username} already in queue. Ignoring.`);
@@ -873,12 +927,18 @@ ${formattedLogs || 'No chat history logged.'}`;
 
             const lowerUser = (user.username || '').toLowerCase();
             const isApproved = approvedHunters.has(lowerUser);
+            const isScammer = globalBanList.has(lowerUser);
+
+            let scammerBtnHtml = '';
+            if (isScammer) {
+                scammerBtnHtml = `<button class="q-scammer-warn-btn" title="⛔ REPORTED SCAMMER - Blocked from entering giveaways">⛔ SCAMMER</button>`;
+            }
 
             let hunterBtnHtml = '';
             if (isHunterDetectorEnabled && !isApproved) {
                 const hInfo = analyzeUserForHunter(user.username);
                 if (hInfo.isHunter) {
-                    hunterBtnHtml = `<button class="q-hunter-warn-btn" title="Hunter Detected! Click to inspect">⚠️</button>`;
+                    hunterBtnHtml = `<button class="q-hunter-warn-btn" title="Click to inspect hunter analysis">⚠️ Hunter (${hInfo.score}%)</button>`;
                 }
             }
 
@@ -888,7 +948,7 @@ ${formattedLogs || 'No chat history logged.'}`;
 
             item.innerHTML = `
                 <div class="q-info">
-                    <span class="q-name">${user.username}${weightBadge}${hunterBtnHtml}</span>
+                    <span class="q-name">${user.username}${weightBadge}${scammerBtnHtml}${hunterBtnHtml}</span>
                     <span class="q-slot">${user.slot_name}</span>
                 </div>
                 <button class="q-delete-btn" title="Remove from queue">✕</button>
@@ -1167,8 +1227,15 @@ ${formattedLogs || 'No chat history logged.'}`;
                     ? `<div class="gold-winner-badge">🌟 Gold Spin Underdog Winner!</div>` 
                     : '';
 
-                const lowerUser = (winner.username || '').toLowerCase();
-                const isApproved = approvedHunters.has(lowerUser);
+                const isScammer = globalBanList.has(lowerUser);
+                let scammerBadgeHtml = '';
+                if (isScammer) {
+                    scammerBadgeHtml = `
+                        <div class="scammer-winner-badge" title="Listed on Global Scammer Ban List">
+                            <span>⛔</span> REPORTED SCAMMER - BLOCKED
+                        </div>
+                    `;
+                }
 
                 let hunterBadgeHtml = '';
                 if (isHunterDetectorEnabled && !isApproved) {
@@ -1186,6 +1253,7 @@ ${formattedLogs || 'No chat history logged.'}`;
                     <div class="winner-avatar-circle" style="border-color: ${winnerColor};">
                         ${avatarContentHtml}
                     </div>
+                    ${scammerBadgeHtml}
                     ${goldBadgeHtml}
                     ${hunterBadgeHtml}
                     <div class="winner-name" style="font-size: 1.6rem; font-weight: 800; color: ${winner.isGoldWinner ? '#FFD700' : 'var(--kick-green)'}; margin-bottom: 0.3rem;">${winner.username}</div>
@@ -1753,6 +1821,12 @@ ${formattedLogs || 'No chat history logged.'}`;
             });
         }
 
+        if (dismissScammerBannerBtn && scammerBlockedBanner) {
+            dismissScammerBannerBtn.addEventListener('click', () => {
+                scammerBlockedBanner.style.display = 'none';
+            });
+        }
+
         // Wheel Count Selector
         if (wheelCountSelect) {
             wheelCountSelect.addEventListener('change', () => {
@@ -1868,7 +1942,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.5.2';
+        const CURRENT_VERSION = '1.6.0';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {

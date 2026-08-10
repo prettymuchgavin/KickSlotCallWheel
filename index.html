@@ -26,7 +26,7 @@
         <div class="header-left">
             <div class="brand-logo">
                 <span class="brand-title">Kick Slot Wheel</span>
-                <span class="version-tag">v1.5.2</span>
+                <span class="version-tag">v1.6.0</span>
             </div>
         </div>
 
@@ -197,6 +197,14 @@
                             <button type="button" id="test-ai-key-btn" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.45rem; border-radius: 6px;">🧪 Test AI Connection</button>
                             <div id="ai-test-result" style="font-size: 0.75rem; margin-top: 6px; display: none;"></div>
                         </div>
+                    </div>
+
+                    <div class="setting-item" style="margin-top: 14px; border-top: var(--glass-border); padding-top: 12px;">
+                        <div>
+                            <div class="setting-label" style="color: #FF3B30;">⛔ Global Scammer Ban List</div>
+                            <div class="setting-desc" id="banlist-desc-text">Auto-blocking reported scammers from wheel entries</div>
+                        </div>
+                        <span id="banlist-count-badge" style="background: rgba(255, 59, 48, 0.2); color: #FF3B30; border: 1px solid rgba(255, 59, 48, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">Loading...</span>
                     </div>
                 </div>
             </div>
@@ -447,6 +455,18 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- Scammer Blocked Notification Banner -->
+    <div id="scammer-blocked-banner" class="update-banner" style="display: none; background: linear-gradient(135deg, #FF3B30, #FF003C); box-shadow: 0 0 25px rgba(255, 59, 48, 0.6); z-index: 9998;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.4rem;">⛔</span>
+            <div style="text-align: left;">
+                <strong style="font-size: 0.95rem; color: #fff;">Entry Blocked: <span id="scammer-blocked-name">User</span></strong>
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.9); margin-top: 2px;">This account is listed on the <strong>Global Scammer Ban List</strong> and has been blocked from entering.</div>
+            </div>
+        </div>
+        <button id="dismiss-scammer-banner-btn" style="background: transparent; border: none; color: #fff; cursor: pointer; font-size: 1.1rem; padding: 0 6px;" title="Dismiss">✕</button>
     </div>
 
     <!-- Version Update Notification Banner -->

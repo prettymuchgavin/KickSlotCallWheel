@@ -1025,3 +1025,38 @@ body.simple-graphics-mode .wheel-container {
   background: rgba(255, 159, 0, 0.3);
   transform: translateY(-1px);
 }
+
+/* Global Scammer Ban List Red Warning Badges */
+.q-scammer-warn-btn {
+  background: rgba(255, 59, 48, 0.25);
+  border: 1px solid rgba(255, 59, 48, 0.6);
+  color: #FF3B30;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: 6px;
+  font-weight: 800;
+  transition: transform 0.15s ease;
+}
+
+.q-scammer-warn-btn:hover {
+  transform: scale(1.15);
+  background: rgba(255, 59, 48, 0.45);
+}
+
+.scammer-winner-badge {
+  background: rgba(255, 59, 48, 0.25);
+  color: #FF3B30;
+  border: 1px solid rgba(255, 59, 48, 0.6);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 0 15px rgba(255, 59, 48, 0.4);
+}
