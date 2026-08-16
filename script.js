@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let wheelCount = 1;
     const wheels = [];
     let entriesClosedTimer = null;
+    let hubLogoUrl = '';
     let activeWheelSkin = 'classic';
     let subMultiplier = 2;
     let isGoldSpinEnabled = false;
@@ -1971,7 +1972,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.7.0';
+        const CURRENT_VERSION = '1.7.1';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
