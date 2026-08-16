@@ -88,9 +88,50 @@ document.addEventListener('DOMContentLoaded', () => {
     let aiApiKey = '';
     let aiModel = 'openai/gpt-4o-mini';
     let aiEndpoint = '';
-    let currentInspectedHunter = null;
     const approvedHunters = new Set();
     const aiCache = new Map();
+
+    // Winner Live Chat Feed State
+    const currentWinnerUsernames = new Set();
+
+    function appendLiveWinnerChatMessage(lowerUser, rawUsername, content) {
+        const feeds = document.querySelectorAll(`.winner-live-chat-feed[data-username="${lowerUser}"]`);
+        const badges = document.querySelectorAll(`.winner-live-status-badge[data-username="${lowerUser}"]`);
+
+        badges.forEach(b => {
+            b.innerText = '🟢 Active in Chat';
+            b.style.background = 'rgba(83, 252, 24, 0.25)';
+            b.style.color = 'var(--kick-green)';
+            b.style.border = '1px solid rgba(83, 252, 24, 0.5)';
+            b.style.fontWeight = '800';
+        });
+
+        feeds.forEach(feed => {
+            const noMsgEl = feed.querySelector('.no-winner-msg-text');
+            if (noMsgEl) noMsgEl.remove();
+
+            const msgDiv = document.createElement('div');
+            msgDiv.style.display = 'flex';
+            msgDiv.style.justify = 'space-between';
+            msgDiv.style.gap = '8px';
+            msgDiv.style.padding = '4px 7px';
+            msgDiv.style.borderRadius = '6px';
+            msgDiv.style.background = 'rgba(83, 252, 24, 0.15)';
+            msgDiv.style.border = '1px solid rgba(83, 252, 24, 0.35)';
+
+            msgDiv.innerHTML = `
+                <span style="color: #fff; font-weight: 600; text-align: left; word-break: break-word;">"${content}"</span>
+                <span style="color: var(--kick-green); white-space: nowrap; font-size: 0.72rem; font-weight: 700;">Just now</span>
+            `;
+
+            feed.appendChild(msgDiv);
+            feed.scrollTop = feed.scrollHeight;
+        });
+
+        if (typeof soundManager !== 'undefined' && soundManager.enabled) {
+            try { soundManager.playTick(); } catch(e) {}
+        }
+    }
 
     // Global Scammer Ban List State
     const globalBanList = new Set();
@@ -1167,6 +1208,11 @@ ${formattedLogs || 'No chat history logged.'}`;
     function showWinners(winnersArray) {
         if (!winnersArray || winnersArray.length === 0) return;
 
+        currentWinnerUsernames.clear();
+        winnersArray.forEach(w => {
+            if (w && w.username) currentWinnerUsernames.add(w.username.toLowerCase());
+        });
+
         const modalTitle = document.getElementById('winner-modal-title');
         const container = document.getElementById('winners-container');
         if (!container) return;
@@ -1195,6 +1241,9 @@ ${formattedLogs || 'No chat history logged.'}`;
             if (!winner || !winner.username) return;
 
             try {
+                const lowerUser = (winner.username || '').toLowerCase();
+                const isApproved = approvedHunters.has(lowerUser);
+
                 const card = document.createElement('div');
                 card.className = 'winner-card-item';
                 card.style.textAlign = 'center';
@@ -1293,8 +1342,19 @@ ${formattedLogs || 'No chat history logged.'}`;
                         <div style="font-size: 0.85rem; font-weight: 700; color: var(--kick-green); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px;">
                             <span>📅</span> <span class="follow-status-text">Checking follower info...</span>
                         </div>
+
+                        <div class="winner-live-chat-box" style="margin-bottom: 0.8rem; background: rgba(83, 252, 24, 0.08); border: 1px solid rgba(83, 252, 24, 0.3); border-radius: 8px; padding: 0.7rem;">
+                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--kick-green); display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                <span>⚡ Live Winner Chat (Post-Win)</span>
+                                <span class="winner-live-status-badge" data-username="${lowerUser}" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); color: #ccc;">Waiting for chat...</span>
+                            </div>
+                            <div class="winner-live-chat-feed" data-username="${lowerUser}" style="max-height: 90px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem;">
+                                <div class="no-winner-msg-text" style="color: var(--text-secondary); font-style: italic; font-size: 0.75rem;">Winner hasn't typed in chat since winning yet...</div>
+                            </div>
+                        </div>
+
                         <div style="font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; border-bottom: var(--glass-border); padding-bottom: 0.3rem;">
-                            💬 Messages (Past 2 Days):
+                            💬 History Messages (Past 2 Days):
                         </div>
                         <div class="winner-chat-history" style="display: flex; flex-direction: column; gap: 3px;">
                             ${userMessagesHtml}
@@ -1972,7 +2032,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.7.2';
+        const CURRENT_VERSION = '1.8.0';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
@@ -2038,6 +2098,12 @@ ${formattedLogs || 'No chat history logged.'}`;
             const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
             while (chatLogs.length > 0 && chatLogs[0].timestamp < twoDaysAgo) {
                 chatLogs.shift();
+            }
+
+            // Live Winner Chat Feed Trigger
+            const senderLower = u.toLowerCase();
+            if (currentWinnerUsernames.has(senderLower)) {
+                appendLiveWinnerChatMessage(senderLower, u, content);
             }
 
             try {
