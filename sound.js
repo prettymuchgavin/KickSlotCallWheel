@@ -1,5 +1,5 @@
 /**
- * Sound Manager for KickSlotCallWheel
+ * Sound Manager for DatKickWheel
  * Uses Web Audio API Synthesizer (Zero external dependencies)
  */
 

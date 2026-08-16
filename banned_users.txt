@@ -1,4 +1,4 @@
-# Global Scammer & Fraud Ban List for Kick Slot Wheel
+# Global Scammer & Fraud Ban List for DatKickWheel
 # Users listed here are reported scammers and are automatically blocked from wheel entries
 
 Marlin7771

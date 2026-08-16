@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
             endpointUrl = 'https://openrouter.ai/api/v1/chat/completions';
             headers['Authorization'] = `Bearer ${aiApiKey.trim()}`;
             headers['HTTP-Referer'] = 'https://kickslotwheel.app';
-            headers['X-Title'] = 'Kick Slot Wheel Hunter Detector';
+            headers['X-Title'] = 'DatKickWheel Hunter Detector';
         } else if (aiProvider === 'openai') {
             endpointUrl = 'https://api.openai.com/v1/chat/completions';
             headers['Authorization'] = `Bearer ${aiApiKey.trim()}`;
@@ -1972,7 +1972,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.7.1';
+        const CURRENT_VERSION = '1.7.2';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
