@@ -27,11 +27,16 @@ class Wheel {
         this.targetAngle = 0;
         this.winner = null;
 
-        // Sound tracking
-        this.lastPegIndex = -1;
-
-        // Custom Hub Logo Image
+        // Custom Hub Logo Image & Skin Theme
         this.hubLogoImg = null;
+        this.skin = 'classic';
+    }
+
+    setSkin(skinName) {
+        this.skin = skinName || 'classic';
+        if (!this.isSpinning) {
+            this.draw();
+        }
     }
 
     setHubLogo(url) {
@@ -163,7 +168,9 @@ class Wheel {
             subFontSize = 12;
         }
 
-        this.segments.forEach((segment) => {
+        const skinName = this.skin || 'classic';
+
+        this.segments.forEach((segment, idx) => {
             const startAngle = segment._startAngle;
             const endAngle = segment._endAngle;
             const arcSize = segment._arcSize;
@@ -177,9 +184,27 @@ class Wheel {
             this.ctx.fillStyle = segment.color || '#333';
             this.ctx.fill();
             
-            this.ctx.strokeStyle = '#0b0e11';
-            this.ctx.lineWidth = 3;
+            // Skin Specific Slice Borders
+            this.ctx.save();
+            if (skinName === 'csgo') {
+                const rarities = ['#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b', '#ffd700'];
+                this.ctx.strokeStyle = rarities[idx % rarities.length];
+                this.ctx.lineWidth = 3.5;
+            } else if (skinName === 'slot') {
+                this.ctx.strokeStyle = '#FFBE0B';
+                this.ctx.lineWidth = 3;
+            } else if (skinName === 'arcade') {
+                this.ctx.strokeStyle = '#00F0FF';
+                this.ctx.lineWidth = 3.5;
+            } else if (skinName === 'gold') {
+                this.ctx.strokeStyle = '#FFD700';
+                this.ctx.lineWidth = 3;
+            } else {
+                this.ctx.strokeStyle = '#0b0e11';
+                this.ctx.lineWidth = 3;
+            }
             this.ctx.stroke();
+            this.ctx.restore();
 
             // Draw text
             this.ctx.save();
@@ -197,22 +222,33 @@ class Wheel {
                 : segment.slot_name;
 
             const weightLabel = (segment.weight && segment.weight > 1) ? ` (${segment.weight}x)` : '';
+            const fontFam = skinName === 'arcade' ? 'Courier New, monospace' : 'Inter, sans-serif';
 
             // Draw Username
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = `bold ${fontSize}px Inter`;
+            this.ctx.font = `bold ${fontSize}px ${fontFam}`;
             this.ctx.fillText(displayName + weightLabel, this.radius - 55, -fontSize / 2);
 
             // Draw Slot name
-            this.ctx.font = `${subFontSize}px Inter`;
+            this.ctx.font = `${subFontSize}px ${fontFam}`;
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
             this.ctx.fillText(displaySlot, this.radius - 55, subFontSize / 2 + 2);
 
-            // Draw a decorative neon dot at the slice edge
+            // Draw skin decorative outer peg dot
             const dotRadius = this.segments.length > 20 ? 1.5 : (this.segments.length > 12 ? 2.5 : 4);
             this.ctx.beginPath();
-            this.ctx.arc(this.radius - 25, 0, dotRadius, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#53FC18';
+            this.ctx.arc(this.radius - 24, 0, dotRadius, 0, Math.PI * 2);
+            if (skinName === 'csgo') {
+                this.ctx.fillStyle = '#FFD700';
+            } else if (skinName === 'slot') {
+                this.ctx.fillStyle = '#FF003C';
+            } else if (skinName === 'arcade') {
+                this.ctx.fillStyle = '#FF00D6';
+            } else if (skinName === 'gold') {
+                this.ctx.fillStyle = '#FFD700';
+            } else {
+                this.ctx.fillStyle = '#53FC18';
+            }
             this.ctx.fill();
 
             this.ctx.restore();

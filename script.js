@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hubLogoInput = document.getElementById('hub-logo-input');
     const uploadLogoBtn = document.getElementById('upload-logo-btn');
     const hubLogoFile = document.getElementById('hub-logo-file');
+    const wheelSkinSelect = document.getElementById('wheel-skin-select');
     const hunterDetectorToggle = document.getElementById('hunter-detector-toggle');
     const hunterDetectorOptions = document.getElementById('hunter-detector-options');
     const hunterAiToggle = document.getElementById('hunter-ai-toggle');
@@ -63,10 +64,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let wheelCount = 1;
     const wheels = [];
     let entriesClosedTimer = null;
-    let hubLogoUrl = '';
+    let activeWheelSkin = 'classic';
     let subMultiplier = 2;
     let isGoldSpinEnabled = false;
     let isSimpleGraphics = false;
+
+    function applyWheelSkin(skinName) {
+        activeWheelSkin = skinName || 'classic';
+        const containers = document.querySelectorAll('.wheel-container');
+        containers.forEach(c => {
+            c.classList.remove('skin-classic', 'skin-csgo', 'skin-slot', 'skin-arcade', 'skin-gold');
+            c.classList.add(`skin-${activeWheelSkin}`);
+        });
+        wheels.forEach(w => {
+            if (w.setSkin) w.setSkin(activeWheelSkin);
+        });
+    }
     let isWeightedEntriesEnabled = true;
     let isHunterDetectorEnabled = false;
     let isAiHunterEnabled = false;
@@ -648,6 +661,7 @@ ${formattedLogs || 'No chat history logged.'}`;
             wheels.push(wheelInstance);
         }
 
+        applyWheelSkin(activeWheelSkin);
         refreshAllWheelSegments();
 
         if (spinBtn) {
@@ -759,6 +773,12 @@ ${formattedLogs || 'No chat history logged.'}`;
     if (savedLogo) {
         hubLogoUrl = savedLogo;
         if (hubLogoInput) hubLogoInput.value = hubLogoUrl;
+    }
+
+    const savedSkin = localStorage.getItem('kick_wheel_skin');
+    if (savedSkin) {
+        activeWheelSkin = savedSkin;
+        if (wheelSkinSelect) wheelSkinSelect.value = activeWheelSkin;
     }
 
     // 5. Load Mode, Giveaway & Entry Settings
@@ -1598,6 +1618,15 @@ ${formattedLogs || 'No chat history logged.'}`;
             });
         }
 
+        // Wheel Skin Theme Selector
+        if (wheelSkinSelect) {
+            wheelSkinSelect.addEventListener('change', () => {
+                const skin = wheelSkinSelect.value;
+                localStorage.setItem('kick_wheel_skin', skin);
+                applyWheelSkin(skin);
+            });
+        }
+
         // Custom Center Hub Logo Input & File Upload
         if (hubLogoInput) {
             hubLogoInput.addEventListener('input', () => {
@@ -1942,7 +1971,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.6.0';
+        const CURRENT_VERSION = '1.7.0';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {

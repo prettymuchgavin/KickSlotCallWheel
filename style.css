@@ -535,7 +535,64 @@ input:checked + .slider:before {
   border-radius: 50%;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0,0,0,0.5);
   border: 4px solid var(--kick-green);
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+}
+
+/* --- WHEEL SKINS VARIATIONS --- */
+
+/* Skin 1: Classic Neon Cyberpunk (Default) */
+.wheel-container.skin-classic {
+  border: 4px solid var(--kick-green);
+  box-shadow: 0 0 35px var(--kick-green-glow), inset 0 0 15px rgba(83, 252, 24, 0.3);
+}
+.wheel-container.skin-classic .wheel-pointer {
+  border-top-color: var(--kick-green);
+  filter: drop-shadow(0 0 12px var(--kick-green-glow));
+}
+
+/* Skin 2: CS2 Case Opening */
+.wheel-container.skin-csgo {
+  border: 5px solid #FFD700;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.5), 0 0 15px rgba(255, 170, 0, 0.6), inset 0 0 20px rgba(0,0,0,0.8);
+  background: radial-gradient(circle, #1a1e29 0%, #0d0f14 100%);
+}
+.wheel-container.skin-csgo .wheel-pointer {
+  border-top-color: #FFD700;
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.9));
+}
+
+/* Skin 3: Vegas Casino Slot Machine */
+.wheel-container.skin-slot {
+  border: 6px solid #FFBE0B;
+  box-shadow: 0 0 45px rgba(255, 190, 11, 0.7), inset 0 0 20px rgba(255, 0, 60, 0.4);
+  background: radial-gradient(circle, #2a080c 0%, #0a0203 100%);
+}
+.wheel-container.skin-slot .wheel-pointer {
+  border-top-color: #FF003C;
+  filter: drop-shadow(0 0 16px rgba(255, 0, 60, 0.95));
+}
+
+/* Skin 4: Retro 8-Bit Arcade */
+.wheel-container.skin-arcade {
+  border: 6px solid #FF00D6;
+  border-radius: 50%;
+  box-shadow: 0 0 40px rgba(255, 0, 214, 0.6), inset 0 0 18px rgba(0, 240, 255, 0.5);
+  background: radial-gradient(circle, #18002e 0%, #05000c 100%);
+}
+.wheel-container.skin-arcade .wheel-pointer {
+  border-top-color: #00F0FF;
+  filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.9));
+}
+
+/* Skin 5: Royalty Gold Luxury */
+.wheel-container.skin-gold {
+  border: 6px solid #FFD700;
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.8), inset 0 0 25px rgba(255, 215, 0, 0.5);
+  background: radial-gradient(circle, #2b1f06 0%, #0f0a02 100%);
+}
+.wheel-container.skin-gold .wheel-pointer {
+  border-top-color: #FFD700;
+  filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.95));
 }
 
 canvas.wheel-canvas {
@@ -558,6 +615,7 @@ canvas.wheel-canvas {
   filter: drop-shadow(0 0 10px var(--kick-green-glow));
   z-index: 15;
   pointer-events: none;
+  transition: all 0.3s ease;
 }
 
 /* Center Hub */
