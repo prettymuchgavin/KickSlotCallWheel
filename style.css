@@ -997,12 +997,110 @@ body.simple-graphics-mode .wheel-container {
   position: absolute;
   bottom: 40px;
   left: 0;
-  width: 260px;
+  width: 290px;
   background: #14171a;
   border: var(--glass-border);
   padding: 0.9rem;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  box-shadow: 0 4px 25px rgba(0,0,0,0.7);
+  z-index: 50;
+}
+
+.info-ads-carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 8px 0;
+  background: #0b0e11;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.info-ad-slides {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.info-ad-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+  pointer-events: none;
+}
+
+.info-ad-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.info-ad-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  z-index: 5;
+  transition: all 0.2s ease;
+  user-select: none;
+  padding: 0;
+}
+
+.info-ad-nav:hover {
+  background: rgba(83, 252, 24, 0.5);
+  color: #fff;
+  border-color: var(--kick-green);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.info-ad-nav.prev {
+  left: 6px;
+}
+
+.info-ad-nav.next {
+  right: 6px;
+}
+
+.info-ad-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+
+.info-ad-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.info-ad-dot.active {
+  background: var(--kick-green);
+  box-shadow: 0 0 6px var(--kick-green);
+  width: 16px;
+  border-radius: 4px;
 }
 
 .info-banner-close {
@@ -1013,19 +1111,25 @@ body.simple-graphics-mode .wheel-container {
   border: none;
   color: #999;
   cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.info-banner-close:hover {
+  color: #fff;
 }
 
 .info-banner-title {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--kick-green);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .info-banner-body {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: #ccc;
-  line-height: 1.4;
+  line-height: 1.35;
+  margin-top: 4px;
 }
 
 .update-banner {

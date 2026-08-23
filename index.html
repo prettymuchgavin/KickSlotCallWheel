@@ -26,7 +26,7 @@
         <div class="header-left">
             <div class="brand-logo">
                 <span class="brand-title">DatKickWheel</span>
-                <span class="version-tag">v1.8.0</span>
+                <span class="version-tag">v1.8.1</span>
             </div>
         </div>
 
@@ -309,10 +309,29 @@
 
             <!-- Bottom Corner Info Button & Banner -->
             <div id="info-corner-container">
-                <button id="info-btn" title="Site Info & Updates">ℹ️</button>
+                <button id="info-btn" title="Site Info & Ads">ℹ️</button>
                 <div id="info-banner" class="info-banner-popup" style="display: none;">
-                    <button class="info-banner-close" id="close-info-banner">✕</button>
-                    <div class="info-banner-title">ℹ️ Active Development</div>
+                    <button class="info-banner-close" id="close-info-banner" title="Close">✕</button>
+                    <div class="info-banner-title">ℹ️ DatKickWheel Info</div>
+
+                    <!-- Ads Carousel -->
+                    <div class="info-ads-carousel" id="info-ads-carousel">
+                        <div class="info-ad-slides">
+                            <img src="datkickwheel_ads/fair.png" alt="Claim Your Fair Edge" class="info-ad-slide active">
+                            <img src="datkickwheel_ads/proof.png" alt="Proof is Better Than Words" class="info-ad-slide">
+                            <img src="datkickwheel_ads/rigged.png" alt="Stop the Rigged Chat Claims" class="info-ad-slide">
+                            <img src="datkickwheel_ads/transparency.png" alt="Powered by Transparency" class="info-ad-slide">
+                        </div>
+                        <button class="info-ad-nav prev" id="info-ad-prev" title="Previous ad">‹</button>
+                        <button class="info-ad-nav next" id="info-ad-next" title="Next ad">›</button>
+                        <div class="info-ad-dots" id="info-ad-dots">
+                            <span class="info-ad-dot active" data-index="0"></span>
+                            <span class="info-ad-dot" data-index="1"></span>
+                            <span class="info-ad-dot" data-index="2"></span>
+                            <span class="info-ad-dot" data-index="3"></span>
+                        </div>
+                    </div>
+
                     <div class="info-banner-body">
                         This site is in active development. Hard-refresh your browser to update using <code>Ctrl + Shift + R</code>.
                     </div>

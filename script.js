@@ -1947,16 +1947,91 @@ ${formattedLogs || 'No chat history logged.'}`;
             });
         }
 
-        // Info Button & Banner Popup
+        // Info Button, Banner Popup & Ads Carousel
         const infoBtn = document.getElementById('info-btn');
         const infoBanner = document.getElementById('info-banner');
         const closeInfoBanner = document.getElementById('close-info-banner');
+        const infoAdPrev = document.getElementById('info-ad-prev');
+        const infoAdNext = document.getElementById('info-ad-next');
+        const infoAdSlides = document.querySelectorAll('.info-ad-slide');
+        const infoAdDots = document.querySelectorAll('.info-ad-dot');
+        const infoAdsCarousel = document.getElementById('info-ads-carousel');
+
+        let currentAdIndex = 0;
+        let adCarouselInterval = null;
+
+        function showAdSlide(index) {
+            if (!infoAdSlides.length) return;
+            if (index < 0) index = infoAdSlides.length - 1;
+            if (index >= infoAdSlides.length) index = 0;
+            currentAdIndex = index;
+
+            infoAdSlides.forEach((slide, idx) => {
+                slide.classList.toggle('active', idx === currentAdIndex);
+            });
+            infoAdDots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === currentAdIndex);
+            });
+        }
+
+        function startAdAutoRotate() {
+            stopAdAutoRotate();
+            adCarouselInterval = setInterval(() => {
+                showAdSlide(currentAdIndex + 1);
+            }, 4500);
+        }
+
+        function stopAdAutoRotate() {
+            if (adCarouselInterval) {
+                clearInterval(adCarouselInterval);
+                adCarouselInterval = null;
+            }
+        }
+
+        if (infoAdPrev) {
+            infoAdPrev.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showAdSlide(currentAdIndex - 1);
+                startAdAutoRotate();
+            });
+        }
+
+        if (infoAdNext) {
+            infoAdNext.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showAdSlide(currentAdIndex + 1);
+                startAdAutoRotate();
+            });
+        }
+
+        infoAdDots.forEach((dot) => {
+            dot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(dot.getAttribute('data-index'), 10) || 0;
+                showAdSlide(idx);
+                startAdAutoRotate();
+            });
+        });
+
+        if (infoAdsCarousel) {
+            infoAdsCarousel.addEventListener('mouseenter', stopAdAutoRotate);
+            infoAdsCarousel.addEventListener('mouseleave', () => {
+                if (infoBanner && infoBanner.style.display !== 'none') {
+                    startAdAutoRotate();
+                }
+            });
+        }
 
         if (infoBtn && infoBanner) {
             infoBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isHidden = infoBanner.style.display === 'none';
                 infoBanner.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) {
+                    startAdAutoRotate();
+                } else {
+                    stopAdAutoRotate();
+                }
             });
         }
 
@@ -1964,6 +2039,7 @@ ${formattedLogs || 'No chat history logged.'}`;
             closeInfoBanner.addEventListener('click', (e) => {
                 e.stopPropagation();
                 infoBanner.style.display = 'none';
+                stopAdAutoRotate();
             });
         }
 
@@ -2032,7 +2108,7 @@ ${formattedLogs || 'No chat history logged.'}`;
         }
 
         // Version Checker Logic
-        const CURRENT_VERSION = '1.8.0';
+        const CURRENT_VERSION = '1.8.1';
         const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/prettymuchgavin/KickSlotCallWheel/main/version.txt';
 
         async function checkForUpdates() {
